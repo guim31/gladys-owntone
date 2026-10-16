@@ -1,77 +1,101 @@
+// -----------------------------------------------------------------------------
+// The "OwnTone" widget: its content fits the core vocabulary and budget
+// (validateWidgetContent), its buttons act on the server.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { AIRPLAY, FIFO } from './helpers/fakeOwntone.js';
+import { createAll, createWorld, until } from './helpers/world.js';
+import { WIDGET_ACTIONS } from '../src/widgets.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+async function world(t) {
+  const w = await createWorld();
+  t.after(() => w.stop());
+  await createAll(w);
+  return w;
+}
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+const get = async (gladys, language = 'en') => {
+  const ack = await gladys.fake.widgetGet('player', { settings: {}, language });
+  assert.equal(ack.success, true, ack.error);
+  assert.deepEqual(validateWidgetContent(ack.data.content), [], 'rendered as sent');
+  return ack.data.content;
+};
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
+const buttons = (content) =>
+  content.components.filter((c) => c.type === 'button').map((c) => c.action.key);
 
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
-  }
-});
+const press = (gladys, key) => gladys.fake.widgetAction('player', key, {}, { settings: {} });
 
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('what plays, the state, the volume, the outputs and four buttons', async (t) => {
+  const { gladys, server } = await world(t);
+  server.output(FIFO).selected = true;
+  server.playQueue();
+  await until(async () => (await get(gladys)).components[0].text === 'Test tone 1');
+  const content = await get(gladys, 'fr');
+  assert.deepEqual(content.components.slice(0, 3), [
+    { type: 'text', variant: 'heading', text: 'Test tone 1' },
+    { type: 'text', variant: 'caption', text: 'Bench Ensemble · Sine Sessions' },
+    {
+      type: 'status',
+      items: [
+        { label: 'État', value: 'En lecture', color: 'success' },
+        { label: 'Volume', value: '50 %', icon: 'volume-2' },
+      ],
+    },
+  ]);
+  const list = content.components[3];
+  assert.deepEqual(
+    list.items.map((i) => [i.title, i.subtitle, i.badge.text]),
+    [
+      ['Kitchen fifo', 'FIFO', '50 %'],
+      ['Computer', 'ALSA', 'Éteinte'],
+      ['Living room', 'AirPlay 2', 'Éteinte'],
+    ],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
+  assert.deepEqual(buttons(content), WIDGET_ACTIONS);
+  assert.equal(content.components.find((c) => c.type === 'button').label, 'Pause');
+  assert.ok(content.components.length <= 8);
 });
 
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
+test('the buttons drive the player; their toasts in four languages', async (t) => {
+  const { gladys, server } = await world(t);
+  server.playQueue();
+  await until(async () => (await get(gladys)).components[0].text === 'Test tone 1');
+  let ack = await press(gladys, 'play_pause');
+  assert.equal(ack.data.message.fr, 'En pause.');
+  assert.equal(server.player.state, 'pause');
+  await until(async () => (await get(gladys)).components[2].items[0].value === 'Paused');
+  ack = await press(gladys, 'next');
+  assert.equal(ack.data.message.de, 'Nächster Titel.');
+  assert.equal(server.player.item_id, server.queue[1].id);
+  ack = await press(gladys, 'volume_up');
+  assert.equal(ack.data.message.es, 'Volumen cambiado.');
+  assert.equal(server.player.volume, 55);
+  await until(async () => (await get(gladys)).components[2].items[1].value === '55 %');
+  await press(gladys, 'volume_down');
+  assert.equal(server.player.volume, 50);
+  await until(async () => (await get(gladys)).components[2].items[1].value === '50 %');
+  ack = await press(gladys, 'play_pause');
+  assert.equal(ack.data.message.en, 'Playing.');
+  assert.equal(server.player.state, 'play');
 });
 
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
-  );
-});
+test('nothing in the queue; then the server gone', async (t) => {
+  const { gladys, server } = await world(t);
+  let content = await get(gladys);
+  assert.equal(content.components[0].text, 'Nothing in the queue');
+  assert.equal(content.components[1].type, 'status', 'no caption without a track');
+  const ack = await press(gladys, 'play_pause');
+  assert.match(ack.data.message.en, /queue is empty/);
 
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+  server.output(AIRPLAY).name = 'Living room speaker with a very long name that goes on';
+  await server.close();
+  await until(async () => (await get(gladys)).components.length === 1, 2000, 'unavailable');
+  content = await get(gladys, 'de');
+  assert.equal(content.components[0].text, 'Der OwnTone-Server ist nicht erreichbar.');
+  const offline = await press(gladys, 'volume_up');
+  assert.match(offline.data.message.en, /unreachable/);
 });
