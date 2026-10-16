@@ -1,67 +1,124 @@
-# Template de démonstration
+# OwnTone
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Cette intégration pilote un serveur [OwnTone](https://owntone.github.io/owntone-server/) (ex
+forked-daapd) depuis Gladys : le lecteur (lecture, pause, suivant, volume, ce qui joue) et chaque
+sortie, enceintes AirPlay et Chromecast ou sortie audio locale, que vous allumez, éteignez et dont
+vous réglez le volume pièce par pièce. Elle parle à OwnTone sur le réseau local, par son API JSON, et
+suit chaque changement en direct par son WebSocket. Pas de cloud, pas de compte.
 
-## Ce que vous obtenez
+> **Testée contre un vrai OwnTone 29.3 en Docker, sans enceinte AirPlay ni Chromecast : vos retours
+> sont les bienvenus.** Lecture, volumes, sélection des sorties, notifications et redémarrage
+> d'OwnTone ont été vérifiés en vrai, sur ses sorties locale et fifo.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Prérequis
+
+- Gladys Assistant 5.1 ou plus récent.
+- Un serveur OwnTone (version 28 ou plus récente) joignable depuis Gladys sur le port de son
+  interface web, 3689 par défaut, et sur son port WebSocket (`websocket_port` dans `owntone.conf`,
+  3688 par défaut).
+- Gladys dans les `trusted_networks` d'`owntone.conf`, ou l'`admin_password` d'OwnTone saisi dans la
+  configuration.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+1. **Adresse du serveur** : l'adresse IP ou le nom d'hôte de la machine qui fait tourner OwnTone,
+   comme pour son interface web. Ajoutez `:port` s'il n'est pas 3689 (`http://192.168.1.20:3689` est
+   accepté aussi).
+2. **Port** : 3689, sauf si vous avez changé `port` dans la section `library` d'`owntone.conf`.
+3. **Mot de passe admin (facultatif)** : seulement si Gladys est hors des `trusted_networks`
+   d'OwnTone. Par défaut, OwnTone fait confiance au réseau local et ne demande pas de mot de passe.
+4. **Langue** : la langue des noms de fonctionnalités et des textes écrits par l'intégration. Les
+   noms des fonctionnalités sont fixés à l'ajout de l'appareil.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Ouvrez ensuite l'onglet **Découverte** et ajoutez le lecteur et les sorties voulues.
 
-## Actions
+## Appareils
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+### Lecteur
 
-## Scènes
+Le lecteur d'OwnTone, un par serveur :
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+- **Volume** (0 à 100) : le volume général. OwnTone y ajuste chaque sortie sélectionnée.
+- **État de lecture** : en lecture ou non.
+- **Lecture**, **Pause**, **Précédent**, **Suivant** : des boutons.
+- **En cours** : titre et artiste, avec l'état quand la lecture est en pause ou arrêtée.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+Ces fonctionnalités sont de la catégorie **Musique** de Gladys : la boîte **Musique** du tableau de
+bord pilote le lecteur.
 
-## Tableau de bord
+### Sorties
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Un appareil par sortie d'OwnTone : enceinte AirPlay ou Chromecast, sortie audio locale (ALSA,
+PulseAudio), fifo.
+
+- **Sélectionnée** : allumée, OwnTone joue sur cette sortie ; éteinte, non. Allumer une enceinte
+  pendant la lecture l'ajoute aussitôt au groupe.
+- **Volume** (0 à 100) : le volume de cette sortie.
+
+Une sortie qui quitte OwnTone (enceinte éteinte, hors du réseau) apparaît non sélectionnée et garde
+son appareil dans Gladys ; elle revient d'elle-même.
+
+## Widget du tableau de bord
+
+**OwnTone** : ce qui joue (titre, artiste, album), l'état et le volume du lecteur, les sorties avec
+leur volume (ou « Éteinte »), et quatre boutons : lecture ou pause, suivant, volume moins, volume
+plus (de 5 en 5).
+
+## Déclencheurs de scène
+
+- **Lecture démarrée** : OwnTone se met à jouer. Variables : titre, artiste, album.
+- **Lecture arrêtée** : OwnTone cesse de jouer, en pause ou arrêté, depuis 5 secondes au moins
+  (OwnTone indique « pause » un instant à chaque changement de titre). Filtre : en pause, arrêtée, ou
+  les deux. Variables : titre, artiste, album.
+- **Sortie disparue** : une sortie quitte OwnTone. Filtre : une sortie, ou toutes. Variable : le nom
+  de la sortie.
+- **Sortie apparue** : une sortie arrive (ou revient) dans OwnTone. Filtre : une sortie, ou toutes.
+  Variable : le nom de la sortie.
+
+## Actions de scène
+
+- **Lancer une playlist** : remplace la file d'attente par une playlist OwnTone et la lance. Saisissez
+  son nom (sans tenir compte des majuscules ni des accents ; une partie du nom suffit quand une seule
+  playlist correspond) ou une URI (`library:playlist:8`, `spotify:playlist:…`, l'adresse d'une radio
+  internet). Avec jusqu'à trois sorties choisies, elles seules jouent ; sans sortie, les sorties
+  restent inchangées. Sortie : le nom de la playlist lancée.
+- **Régler le volume** : d'une sortie (une pièce), ou du lecteur (toutes les sorties sélectionnées
+  suivent).
+- **Tout couper** : arrête la lecture ; ou l'arrête et éteint toutes les sorties, ce qui libère les
+  enceintes AirPlay pour d'autres applis.
+
+## Exemples de scènes
+
+- **Réveil en musique** : à 7 h en semaine, « Lancer une playlist » `Réveil` sur l'enceinte de la
+  chambre, puis « Régler le volume » de cette sortie à 25.
+- **Départ de la maison** : quand la maison se vide, « Tout couper » en éteignant toutes les sorties.
+- **La lumière suit la musique** : sur « Lecture démarrée » après le coucher du soleil, tamiser le
+  salon ; sur « Lecture arrêtée », rallumer.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Le serveur OwnTone ne répond pas »** : vérifiez l'adresse et le port, puis que l'interface web
+  s'ouvre depuis un autre appareil du réseau.
+- **« OwnTone refuse le mot de passe »** : saisissez l'`admin_password` d'`owntone.conf`. OwnTone
+  l'exige pour toute adresse hors de ses `trusted_networks`.
+- **« OwnTone refuse Gladys »** : OwnTone n'a pas d'`admin_password` et ne fait pas confiance au
+  réseau de Gladys : définissez-en un, ou ajoutez ce réseau aux `trusted_networks`.
+- **Les états n'arrivent que toutes les 5 secondes** : le port WebSocket d'OwnTone (3688) n'est pas
+  joignable, ou `websocket_port` vaut 0. L'intégration lit alors OwnTone toutes les 5 secondes. Les
+  journaux le signalent à la connexion.
+- **« OwnTone n'a pas pu utiliser cette sortie »** : l'enceinte est éteinte, occupée par une autre
+  source, ou demande un mot de passe ou un code d'appairage : appairez-la une fois depuis l'interface
+  web d'OwnTone.
+- **« La file d'attente d'OwnTone est vide »** : Lecture a besoin de quelque chose dans la file :
+  lancez d'abord une playlist.
+
+## Limites
+
+- Un serveur OwnTone par intégration, saisi à la main (le bac à sable de Gladys n'a pas de mDNS à
+  lui).
+- Pas d'appairage des enceintes AirPlay qui demandent un code, ni de mot de passe de sortie : faites-le
+  une fois dans l'interface web d'OwnTone.
+- Une playlist se choisit par son nom ou son URI : pas de navigation dans la bibliothèque, les albums
+  ou les artistes.
+- Développée sans enceinte AirPlay ni Chromecast : leur comportement vient de l'API d'OwnTone, pas
+  d'un essai avec le matériel. Vos retours sont les bienvenus.

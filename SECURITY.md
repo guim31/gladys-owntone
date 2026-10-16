@@ -30,6 +30,12 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration connects to one OwnTone server on the local network: its JSON API over plain HTTP
+(port 3689 by default) and its notification WebSocket (port 3688 by default), without TLS, as OwnTone
+serves them. The optional admin password is kept by Gladys in the integration configuration, sent to
+OwnTone as HTTP Basic authentication and never written to the logs. The integration stores nothing
+under `/data`, opens no port and exposes no service.
+
 Out of scope: Gladys Assistant itself (see its
-[security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+[security policy](https://github.com/GladysAssistant/Gladys/security/policy)), and OwnTone and the
+speakers the integration talks to.

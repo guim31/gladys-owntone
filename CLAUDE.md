@@ -32,15 +32,19 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every SDK handler on the hub (shared with the tests)
+src/hub.js                        the server, its model, devices, states, scene events, commands
+src/owntone/client.js             JSON API (HTTP 3689) + notification WebSocket, reconnection
+src/owntone/model.js              /api/player, /api/outputs, /api/queue?id= -> model
+src/devices.js                    player and output devices, feature couples, states
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/texts.js                      every text of the container, in en/fr/de/es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+gladys-assistant-integration.json manifest: name, config_schema, triggers, actions, widget...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+test/helpers/fakeOwntone.js       scripted OwnTone (HTTP + WebSocket) from the recorded fixtures
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +74,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, widget texts, feature names, manifest texts, and `docs/en.md`,
+  `fr.md`, `de.md`, `es.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +238,31 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## OwnTone (appris sur cette intégration)
+
+- API JSON sur HTTP 3689 (`/api/...`) : une commande répond **204 sans corps**, une lecture 200 en
+  JSON ; une sortie inconnue ou qui ne démarre pas (ALSA sans carte, enceinte occupée) répond **400**
+  avec une page HTML ; `player/play` sur une file vide répond **500** ; `queue/items/add` avec une URI
+  inconnue répond 500 **et vide la file** (`clear=true`). Vérifié sur OwnTone 29.3 (image
+  `owntone/owntone`).
+- Mot de passe : hors `trusted_networks`, HTTP Basic avec l'utilisateur **`admin`** obligatoire (un
+  autre nom ou un nom vide : 401). Le WebSocket ne demande rien.
+- WebSocket sur `config.websocket_port` (3688), sous-protocole **`notify`**, abonnement
+  `{"notify":["player","outputs","volume","queue"]}` ; il ne donne que les noms des changements :
+  tout se relit par l'API. Pas de WebSocket sur `/ws` du port 3689 en 29.3.
+- **OwnTone dit `pause` environ 2 s pendant le démarrage des sorties**, à chaque lancement et à chaque
+  `next`/`previous` : d'où le délai de 5 s (`stopGraceMs`) avant le déclencheur « lecture arrêtée ».
+  `playback_state` suit l'état brut.
+- Volume : `player.volume` est le volume général (maximum des sorties sélectionnées) ; le changer
+  remet les sorties sélectionnées à l'échelle. `PUT outputs/<id> {"volume": n}` règle une sortie,
+  même non sélectionnée. `PUT outputs/set {"outputs": [...]}` fixe exactement la sélection (`[]` :
+  tout éteint). Les volumes hors 0-100 sont bornés par OwnTone.
+- `search?type=playlist&query=` cherche une sous-chaîne, sans casse.
+- Identifiants des sorties : chaînes de chiffres (0 pour ALSA, 100 pour fifo, un hachage de
+  l'identifiant de l'enceinte pour AirPlay et Chromecast), stables d'un redémarrage à l'autre.
+- Banc Docker : l'image `owntone/owntone` exige avahi (sinon « mDNS init failed ») : lancer
+  `dbus-daemon --system` puis `avahi-daemon -D --no-chroot` avant `owntone -f -c …`, après
+  `rm -rf /run/dbus /run/avahi-daemon` (sinon un `docker restart` échoue). Utilisateur `nobody`
+  (`uid` d'owntone.conf), sortie `fifo` lue par un `cat` en boucle, ALSA `card = "null"` = une sortie
+  qui refuse de démarrer (400). Pas d'AirPlay ni de Chromecast sur le banc.
