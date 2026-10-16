@@ -1,0 +1,21 @@
+{
+  "library_name": "Bench",
+  "hide_singles": false,
+  "websocket_port": 3688,
+  "version": "29.3",
+  "buildoptions": [
+    "ffmpeg",
+    "Spotify",
+    "librespot-c",
+    "LastFM",
+    "Chromecast",
+    "MPD",
+    "Websockets",
+    "ALSA",
+    "Webinterface",
+    "Regex"
+  ],
+  "directories": ["/srv/media"],
+  "radio_playlists": false,
+  "allow_modifying_stored_playlists": false
+}

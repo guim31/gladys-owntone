@@ -1,0 +1,34 @@
+{
+  "version": 6,
+  "count": 3,
+  "items": [
+    {
+      "id": 4,
+      "position": 0,
+      "track_id": 3,
+      "title": "Test tone 1",
+      "artist": "Bench Ensemble",
+      "artist_sort": "Bench Ensemble",
+      "album": "Sine Sessions",
+      "album_sort": "Sine Sessions",
+      "album_id": "8987193343194924364",
+      "album_artist": "Bench Ensemble",
+      "album_artist_sort": "Bench Ensemble",
+      "album_artist_id": "910824238327661532",
+      "genre": "Unknown genre",
+      "year": 0,
+      "track_number": 1,
+      "disc_number": 0,
+      "length_ms": 40000,
+      "media_kind": "music",
+      "data_kind": "file",
+      "path": "/srv/media/Jazz/tone1.mp3",
+      "uri": "library:track:3",
+      "artwork_url": "./artwork/item/3",
+      "type": "mp3",
+      "bitrate": 128,
+      "samplerate": 44100,
+      "channels": 2
+    }
+  ]
+}

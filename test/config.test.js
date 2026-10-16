@@ -1,33 +1,36 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeConfig, DEFAULT_CONFIG } from '../src/config.js';
+import { DEFAULT_CONFIG, normalizeConfig, parseHost } from '../src/config.js';
 
-test('normalizeConfig returns the defaults when called with no argument', () => {
-  assert.deepEqual(normalizeConfig(), DEFAULT_CONFIG);
+test('the address: host, host:port, IPv6, the web interface URL', () => {
+  assert.deepEqual(parseHost('192.0.2.10'), { host: '192.0.2.10', port: null });
+  assert.deepEqual(parseHost(' owntone.lan:3690 '), { host: 'owntone.lan', port: 3690 });
+  assert.deepEqual(parseHost('[2001:db8::1]:3689'), { host: '2001:db8::1', port: 3689 });
+  assert.deepEqual(parseHost('http://192.0.2.10:3689/'), { host: '192.0.2.10', port: 3689 });
+  for (const bad of ['', '  ', 'https://owntone.lan', 'tcp://x', 'a b', 'user@host', 'x/y']) {
+    assert.equal(parseHost(bad), null, bad);
+  }
 });
 
-test('normalizeConfig keeps user values over the defaults', () => {
-  const config = normalizeConfig({ latitude: 45.5, longitude: -73.6, unit: 'fahrenheit' });
-  assert.equal(config.latitude, 45.5);
-  assert.equal(config.longitude, -73.6);
-  assert.equal(config.unit, 'fahrenheit');
-});
-
-test('normalizeConfig coerces numeric strings coming from a form', () => {
-  const config = normalizeConfig({ latitude: '48.8', longitude: '2.3', poll_frequency: '600' });
-  assert.equal(config.latitude, 48.8);
-  assert.equal(config.longitude, 2.3);
-  assert.equal(config.poll_frequency, 600);
-  assert.equal(typeof config.poll_frequency, 'number');
-});
-
-test('normalizeConfig falls back to the default for a missing numeric field', () => {
-  const config = normalizeConfig({ unit: 'celsius' });
-  assert.equal(config.poll_frequency, DEFAULT_CONFIG.poll_frequency);
-});
-
-test('GLADYS_PREFER_LOCAL defaults to true and only an explicit false disables it', () => {
-  assert.equal(normalizeConfig().GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: true }).GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: false }).GLADYS_PREFER_LOCAL, false);
+test('normalization: defaults, port, password kept as typed, language', () => {
+  assert.deepEqual(normalizeConfig({}), {
+    configured: false,
+    valid: false,
+    host: '',
+    port: 3689,
+    password: '',
+    language: 'fr',
+  });
+  const config = normalizeConfig({
+    host: 'owntone.lan',
+    port: '3700',
+    password: ' s3cret ',
+    language: 'de',
+  });
+  assert.equal(config.port, 3700);
+  assert.equal(config.password, ' s3cret ');
+  assert.equal(config.language, 'de');
+  assert.equal(normalizeConfig({ host: 'owntone.lan:3800', port: 3700 }).port, 3800);
+  assert.equal(normalizeConfig({ host: 'x', port: 70000, language: 'it' }).port, 3689);
+  assert.equal(normalizeConfig({ host: 'x', language: 'it' }).language, DEFAULT_CONFIG.language);
 });

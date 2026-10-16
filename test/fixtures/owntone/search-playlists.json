@@ -1,0 +1,22 @@
+{
+  "playlists": {
+    "items": [
+      {
+        "id": 8,
+        "name": "Evening",
+        "path": "/srv/media/Evening.m3u",
+        "parent_id": "0",
+        "type": "plain",
+        "smart_playlist": false,
+        "random": false,
+        "folder": false,
+        "item_count": 3,
+        "stream_count": 0,
+        "uri": "library:playlist:8"
+      }
+    ],
+    "total": 1,
+    "offset": 0,
+    "limit": -1
+  }
+}

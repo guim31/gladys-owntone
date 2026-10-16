@@ -1,147 +1,477 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "OwnTone",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "OwnTone music server: player, AirPlay and Chromecast outputs, playlists, volume per room.",
+    "fr": "Serveur musical OwnTone : lecteur, sorties AirPlay et Chromecast, playlists, volume par pièce.",
+    "de": "OwnTone-Musikserver: Player, AirPlay- und Chromecast-Ausgaben, Playlists, Lautstärke pro Raum.",
+    "es": "Servidor musical OwnTone: reproductor, salidas AirPlay y Chromecast, listas, volumen por sala."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-owntone:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-owntone/main/cover.png",
+  "categories": ["multimedia"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect your OwnTone server",
+        "fr": "Connecter votre serveur OwnTone",
+        "de": "Verbinde deinen OwnTone-Server",
+        "es": "Conecte su servidor OwnTone"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Type the address of the machine that runs OwnTone (formerly forked-daapd), as for its web interface. The integration uses its JSON API (port 3689) and follows every change live through its WebSocket (port 3688 by default). The player becomes a device, each output (AirPlay or Chromecast speaker, local audio) too.",
+        "fr": "Saisissez l'adresse de la machine qui fait tourner OwnTone (ex forked-daapd), comme pour son interface web. L'intégration utilise son API JSON (port 3689) et suit chaque changement en direct par son WebSocket (port 3688 par défaut). Le lecteur devient un appareil, chaque sortie (enceinte AirPlay ou Chromecast, sortie audio locale) aussi.",
+        "de": "Gib die Adresse des Rechners ein, auf dem OwnTone (früher forked-daapd) läuft, wie für seine Weboberfläche. Die Integration nutzt seine JSON-API (Port 3689) und folgt jeder Änderung live über seinen WebSocket (standardmäßig Port 3688). Der Player wird ein Gerät, jede Ausgabe (AirPlay- oder Chromecast-Lautsprecher, lokales Audio) auch.",
+        "es": "Introduzca la dirección del equipo que ejecuta OwnTone (antes forked-daapd), como para su interfaz web. La integración usa su API JSON (puerto 3689) y sigue cada cambio en directo por su WebSocket (puerto 3688 por defecto). El reproductor se convierte en un dispositivo, y cada salida (altavoz AirPlay o Chromecast, audio local) también."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://owntone.github.io/owntone-server/json-api/",
+          "label": {
+            "en": "OwnTone: JSON API",
+            "fr": "OwnTone : API JSON",
+            "de": "OwnTone: JSON-API",
+            "es": "OwnTone: API JSON"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "host",
+      "type": "string",
+      "label": {
+        "en": "Server address",
+        "fr": "Adresse du serveur",
+        "de": "Serveradresse",
+        "es": "Dirección del servidor"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "placeholder": {
+        "en": "e.g. 192.168.1.20",
+        "fr": "ex. 192.168.1.20",
+        "de": "z. B. 192.168.1.20",
+        "es": "p. ej. 192.168.1.20"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": "",
+      "description": {
+        "en": "IP address or host name of OwnTone. Add :port if its web interface is not on port 3689.",
+        "fr": "Adresse IP ou nom d'hôte d'OwnTone. Ajoutez :port si son interface web n'est pas sur le port 3689.",
+        "de": "IP-Adresse oder Hostname von OwnTone. Ergänze :Port, wenn seine Weboberfläche nicht auf Port 3689 läuft.",
+        "es": "Dirección IP o nombre de host de OwnTone. Añada :puerto si su interfaz web no está en el puerto 3689."
+      }
     },
     {
-      "key": "longitude",
+      "key": "port",
       "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "label": {
+        "en": "Port",
+        "fr": "Port",
+        "de": "Port",
+        "es": "Puerto"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "required": false,
+      "default": 3689,
+      "min": 1,
+      "max": 65535,
+      "description": {
+        "en": "Port of the web interface and JSON API (port in the library section of owntone.conf).",
+        "fr": "Port de l'interface web et de l'API JSON (port de la section library d'owntone.conf).",
+        "de": "Port der Weboberfläche und der JSON-API (port im Abschnitt library von owntone.conf).",
+        "es": "Puerto de la interfaz web y de la API JSON (port de la sección library de owntone.conf)."
+      }
     },
     {
-      "key": "unit",
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Admin password (optional)",
+        "fr": "Mot de passe admin (facultatif)",
+        "de": "Admin-Passwort (optional)",
+        "es": "Contraseña de administración (opcional)"
+      },
+      "required": false,
+      "description": {
+        "en": "Only when Gladys is outside the trusted_networks of owntone.conf: its admin_password.",
+        "fr": "Seulement si Gladys est hors des trusted_networks d'owntone.conf : son admin_password.",
+        "de": "Nur wenn Gladys außerhalb der trusted_networks von owntone.conf liegt: sein admin_password.",
+        "es": "Solo si Gladys está fuera de las trusted_networks de owntone.conf: su admin_password."
+      }
+    },
+    {
+      "key": "section_options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options",
+        "de": "Optionen",
+        "es": "Opciones"
+      },
+      "description": {
+        "en": "Language of the names and texts the integration creates (feature names are set when a device is added).",
+        "fr": "Langue des noms et textes créés par l'intégration (les noms des fonctionnalités sont fixés à l'ajout de l'appareil).",
+        "de": "Sprache der Namen und Texte, die die Integration erzeugt (Funktionsnamen werden beim Hinzufügen des Geräts festgelegt).",
+        "es": "Idioma de los nombres y textos que crea la integración (los nombres de las funciones se fijan al añadir el dispositivo)."
+      }
+    },
+    {
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+      "label": {
+        "en": "Language",
+        "fr": "Langue",
+        "de": "Sprache",
+        "es": "Idioma"
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
-    }
-  ],
-  "actions": [
-    {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
+      "default": "fr",
+      "options": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
         }
       ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "playback_started",
+      "label": {
+        "en": "Playback started",
+        "fr": "Lecture démarrée",
+        "de": "Wiedergabe gestartet",
+        "es": "Reproducción iniciada"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "OwnTone starts playing (play, a playlist launched, a remote).",
+        "fr": "OwnTone se met à jouer (lecture, playlist lancée, télécommande).",
+        "de": "OwnTone beginnt zu spielen (Wiedergabe, Playlist gestartet, Fernbedienung).",
+        "es": "OwnTone empieza a reproducir (reproducir, lista iniciada, mando)."
+      },
+      "variables": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "artist",
+          "type": "string",
+          "label": {
+            "en": "Artist",
+            "fr": "Artiste",
+            "de": "Interpret",
+            "es": "Artista"
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        }
+      ]
+    },
+    {
+      "key": "playback_stopped",
+      "label": {
+        "en": "Playback stopped",
+        "fr": "Lecture arrêtée",
+        "de": "Wiedergabe gestoppt",
+        "es": "Reproducción detenida"
+      },
+      "description": {
+        "en": "OwnTone stops playing: paused, stopped, or the end of the queue.",
+        "fr": "OwnTone cesse de jouer : pause, arrêt, ou fin de la file d'attente.",
+        "de": "OwnTone hört auf zu spielen: Pause, Stopp oder Ende der Warteschlange.",
+        "es": "OwnTone deja de reproducir: pausa, parada o fin de la cola."
+      },
+      "fields": [
+        {
+          "key": "state",
+          "type": "select",
+          "label": {
+            "en": "How (empty: both)",
+            "fr": "Comment (vide : les deux)",
+            "de": "Wie (leer: beides)",
+            "es": "Cómo (vacío: ambos)"
+          },
+          "options": [
+            {
+              "value": "paused",
+              "label": {
+                "en": "Paused",
+                "fr": "En pause",
+                "de": "Pausiert",
+                "es": "En pausa"
+              }
+            },
+            {
+              "value": "stopped",
+              "label": {
+                "en": "Stopped",
+                "fr": "Arrêtée",
+                "de": "Gestoppt",
+                "es": "Detenida"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "artist",
+          "type": "string",
+          "label": {
+            "en": "Artist",
+            "fr": "Artiste",
+            "de": "Interpret",
+            "es": "Artista"
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        }
+      ]
+    },
+    {
+      "key": "output_disappeared",
+      "label": {
+        "en": "Output disappeared",
+        "fr": "Sortie disparue",
+        "de": "Ausgabe verschwunden",
+        "es": "Salida desaparecida"
+      },
+      "description": {
+        "en": "An output leaves OwnTone: AirPlay or Chromecast speaker switched off or off the network.",
+        "fr": "Une sortie quitte OwnTone : enceinte AirPlay ou Chromecast éteinte ou hors du réseau.",
+        "de": "Eine Ausgabe verlässt OwnTone: AirPlay- oder Chromecast-Lautsprecher aus oder nicht im Netz.",
+        "es": "Una salida abandona OwnTone: altavoz AirPlay o Chromecast apagado o fuera de la red."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "label": {
+            "en": "Output (empty: any)",
+            "fr": "Sortie (vide : toutes)",
+            "de": "Ausgabe (leer: alle)",
+            "es": "Salida (vacío: todas)"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "output",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Output name",
+            "fr": "Nom de la sortie",
+            "de": "Name der Ausgabe",
+            "es": "Nombre de la salida"
+          }
+        }
+      ]
+    },
+    {
+      "key": "output_appeared",
+      "label": {
+        "en": "Output appeared",
+        "fr": "Sortie apparue",
+        "de": "Ausgabe erschienen",
+        "es": "Salida aparecida"
+      },
+      "description": {
+        "en": "An output comes (back) to OwnTone: a speaker switched on.",
+        "fr": "Une sortie arrive (ou revient) dans OwnTone : une enceinte allumée.",
+        "de": "Eine Ausgabe kommt (wieder) zu OwnTone: ein Lautsprecher eingeschaltet.",
+        "es": "Una salida llega (o vuelve) a OwnTone: un altavoz encendido."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Output (empty: any)",
+            "fr": "Sortie (vide : toutes)",
+            "de": "Ausgabe (leer: alle)",
+            "es": "Salida (vacío: todas)"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "output",
+          "type": "string",
+          "label": {
+            "en": "Output name",
+            "fr": "Nom de la sortie",
+            "de": "Name der Ausgabe",
+            "es": "Nombre de la salida"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "play_playlist",
+      "label": {
+        "en": "Play a playlist",
+        "fr": "Lancer une playlist",
+        "de": "Playlist abspielen",
+        "es": "Reproducir una lista"
+      },
       "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+        "en": "Replaces the queue with an OwnTone playlist (its name, or a URI) and plays it. With outputs chosen, only they play.",
+        "fr": "Remplace la file d'attente par une playlist OwnTone (son nom, ou une URI) et la lance. Avec des sorties choisies, elles seules jouent.",
+        "de": "Ersetzt die Warteschlange durch eine OwnTone-Playlist (Name oder URI) und spielt sie. Mit gewählten Ausgaben spielen nur diese.",
+        "es": "Sustituye la cola por una lista de OwnTone (su nombre, o una URI) y la reproduce. Con salidas elegidas, solo suenan ellas."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "playlist",
+          "type": "string",
+          "label": {
+            "en": "Playlist name",
+            "fr": "Nom de la playlist",
+            "de": "Name der Playlist",
+            "es": "Nombre de la lista"
+          },
+          "placeholder": {
+            "en": "e.g. Morning",
+            "fr": "ex. Réveil",
+            "de": "z. B. Morgen",
+            "es": "p. ej. Mañana"
+          },
+          "required": true
+        },
+        {
+          "key": "output",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Output (empty: as now)",
+            "fr": "Sortie (vide : inchangées)",
+            "de": "Ausgabe (leer: wie jetzt)",
+            "es": "Salida (vacío: sin cambio)"
+          }
+        },
+        {
+          "key": "output_2",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Second output",
+            "fr": "Deuxième sortie",
+            "de": "Zweite Ausgabe",
+            "es": "Segunda salida"
+          }
+        },
+        {
+          "key": "output_3",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Third output",
+            "fr": "Troisième sortie",
+            "de": "Dritte Ausgabe",
+            "es": "Tercera salida"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "key": "playlist",
+          "type": "string",
+          "label": {
+            "en": "Playlist played",
+            "fr": "Playlist lancée",
+            "de": "Gespielte Playlist",
+            "es": "Lista reproducida"
+          }
+        }
+      ]
+    },
+    {
+      "key": "set_volume",
+      "label": {
+        "en": "Set the volume",
+        "fr": "Régler le volume",
+        "de": "Lautstärke einstellen",
+        "es": "Ajustar el volumen"
+      },
+      "description": {
+        "en": "The volume of one output (a room), or of the player (every selected output follows).",
+        "fr": "Le volume d'une sortie (une pièce), ou du lecteur (toutes les sorties sélectionnées suivent).",
+        "de": "Die Lautstärke einer Ausgabe (eines Raums) oder des Players (alle gewählten Ausgaben folgen).",
+        "es": "El volumen de una salida (una sala), o del reproductor (todas las salidas seleccionadas lo siguen)."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -149,28 +479,95 @@
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Output or player",
+            "fr": "Sortie ou lecteur",
+            "de": "Ausgabe oder Player",
+            "es": "Salida o reproductor"
+          },
           "required": true
-        }
-      ],
-      "outputs": [
+        },
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume (0 to 100)",
+            "fr": "Volume (0 à 100)",
+            "de": "Lautstärke (0 bis 100)",
+            "es": "Volumen (0 a 100)"
+          },
+          "required": true,
+          "min": 0,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "key": "stop_all",
+      "label": {
+        "en": "Stop everything",
+        "fr": "Tout couper",
+        "de": "Alles stoppen",
+        "es": "Detener todo"
+      },
+      "description": {
+        "en": "Stops playback; can also turn every output off, which frees the AirPlay speakers for other apps.",
+        "fr": "Arrête la lecture ; peut aussi éteindre toutes les sorties, ce qui libère les enceintes AirPlay pour d'autres applis.",
+        "de": "Stoppt die Wiedergabe; kann auch alle Ausgaben abschalten, was die AirPlay-Lautsprecher für andere Apps freigibt.",
+        "es": "Detiene la reproducción; también puede apagar todas las salidas, lo que libera los altavoces AirPlay para otras apps."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "mode",
+          "type": "select",
+          "label": {
+            "en": "What",
+            "fr": "Quoi",
+            "de": "Was",
+            "es": "Qué"
+          },
+          "required": true,
+          "options": [
+            {
+              "value": "stop",
+              "label": {
+                "en": "Stop playback",
+                "fr": "Arrêter la lecture",
+                "de": "Wiedergabe stoppen",
+                "es": "Detener la reproducción"
+              }
+            },
+            {
+              "value": "stop_outputs_off",
+              "label": {
+                "en": "Stop and turn every output off",
+                "fr": "Arrêter et éteindre toutes les sorties",
+                "de": "Stoppen und alle Ausgaben abschalten",
+                "es": "Detener y apagar todas las salidas"
+              }
+            }
+          ]
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "player",
+      "label": {
+        "en": "OwnTone",
+        "fr": "OwnTone",
+        "de": "OwnTone",
+        "es": "OwnTone"
       },
-      "icon": "activity",
+      "description": {
+        "en": "What plays, the volume and the outputs, with play/pause, next and volume buttons.",
+        "fr": "Ce qui joue, le volume et les sorties, avec lecture/pause, suivant et volume.",
+        "de": "Was läuft, Lautstärke und Ausgaben, mit Wiedergabe/Pause, Weiter und Lautstärke.",
+        "es": "Lo que suena, el volumen y las salidas, con reproducir/pausa, siguiente y volumen."
+      },
+      "icon": "music",
       "action_timeout_seconds": 15
     }
   ]
