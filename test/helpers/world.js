@@ -8,7 +8,7 @@ import { registerHandlers } from '../../src/app.js';
 import { platformIdOf } from '../../src/devices.js';
 import { FakeOwntone, sleep, until } from './fakeOwntone.js';
 
-export const FAST = { resyncMs: 400, pollMs: 50, debounceMs: 5, reloadMs: 5 };
+export const FAST = { resyncMs: 400, pollMs: 50, debounceMs: 5, reloadMs: 5, stopGraceMs: 60 };
 export const FAST_CLIENT = {
   callTimeout: 200,
   connectTimeout: 200,

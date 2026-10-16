@@ -42,6 +42,7 @@ export const TIMINGS = {
   pollMs: 5_000, // a full read without the WebSocket
   debounceMs: 200, // a volume slider is a burst of notifications
   reloadMs: 150, // notifications come in bursts (outputs, player, volume)
+  stopGraceMs: 5_000, // a "pause" shorter than this is OwnTone starting its outputs
 };
 
 // A stable value is re-published every 6 hours (the front greys out a value
@@ -98,6 +99,7 @@ export class Hub {
     this.resyncTimer = null;
     this.changeTimer = null;
     this.reloadTimer = null;
+    this.stopTimer = null;
     this.reloading = null;
     this.reloadAgain = false;
     this.widgetRefreshAt = 0;
@@ -163,9 +165,11 @@ export class Hub {
     clearTimeout(this.resyncTimer);
     clearTimeout(this.changeTimer);
     clearTimeout(this.reloadTimer);
+    clearTimeout(this.stopTimer);
     this.resyncTimer = null;
     this.changeTimer = null;
     this.reloadTimer = null;
+    this.stopTimer = null;
     // Listeners off first: a deliberate stop is not a lost server.
     this.client?.removeAllListeners();
     this.client?.stop();
@@ -237,6 +241,8 @@ export class Hub {
     // The reference of the next read: no scene event for what changed while
     // the server was away.
     this.seen = null;
+    clearTimeout(this.stopTimer);
+    this.stopTimer = null;
     this.#changed();
   }
 
@@ -410,28 +416,38 @@ export class Hub {
     if (!this.online) {
       return;
     }
-    const now = { state: this.model.player.state, outputs: new Set(this.model.outputs.keys()) };
+    const playingNow = this.model.player.state === 'play';
     const before = this.seen;
-    this.seen = now;
+    // `playing` is the settled state: a stop counts once it lasted stopGraceMs.
+    this.seen = {
+      playing: playingNow || Boolean(before?.playing),
+      outputs: new Set(this.model.outputs.keys()),
+    };
     if (!before) {
+      this.seen.playing = playingNow;
       return; // first read after a connection: the reference
     }
-    const playing = now.state === 'play';
-    if (playing !== (before.state === 'play')) {
-      const item = this.model.item;
-      const track = {
-        title: item?.title ?? '',
-        artist: item?.artist ?? '',
-        album: item?.album ?? '',
-      };
-      if (playing) {
-        this.#fire(TRIGGERS.PLAYBACK_STARTED, track);
-      } else {
-        this.#fire(TRIGGERS.PLAYBACK_STOPPED, {
-          ...track,
-          state: now.state === 'pause' ? 'paused' : 'stopped',
-        });
+    if (playingNow) {
+      clearTimeout(this.stopTimer);
+      this.stopTimer = null;
+      if (!before.playing) {
+        this.#fire(TRIGGERS.PLAYBACK_STARTED, this.#track());
       }
+    } else if (before.playing && !this.stopTimer) {
+      // OwnTone 29.3 says "pause" for about 2 s while its outputs start, at
+      // every start and every next/previous: only a lasting stop is one.
+      this.stopTimer = setTimeout(() => {
+        this.stopTimer = null;
+        if (!this.online || !this.seen?.playing || this.model.player.state === 'play') {
+          return;
+        }
+        this.seen.playing = false;
+        this.#fire(TRIGGERS.PLAYBACK_STOPPED, {
+          ...this.#track(),
+          state: this.model.player.state === 'pause' ? 'paused' : 'stopped',
+        });
+      }, this.timings.stopGraceMs);
+      this.stopTimer.unref?.();
     }
     for (const output of this.model.outputs.values()) {
       if (!before.outputs.has(output.id)) {
@@ -443,7 +459,7 @@ export class Hub {
       }
     }
     for (const id of before.outputs) {
-      if (!now.outputs.has(id)) {
+      if (!this.seen.outputs.has(id)) {
         const output = this.known.get(id);
         logger.info(`Output ${output?.name ?? id} disappeared`);
         this.#fire(TRIGGERS.OUTPUT_DISAPPEARED, {
@@ -452,6 +468,11 @@ export class Hub {
         });
       }
     }
+  }
+
+  #track() {
+    const item = this.model.item;
+    return { title: item?.title ?? '', artist: item?.artist ?? '', album: item?.album ?? '' };
   }
 
   #fire(key, data) {

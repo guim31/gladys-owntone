@@ -237,6 +237,12 @@ test('scene events: playback, outputs leaving and coming back; none at connectio
     'playback_started',
     { title: 'Test tone 1', artist: 'Bench Ensemble', album: 'Sine Sessions' },
   ]);
+  // OwnTone says "pause" while its outputs start (next, previous): no event.
+  server.setState('pause');
+  await sleep(20);
+  server.setState('play');
+  await sleep(150);
+  assert.equal(gladys.fake.sceneEvents.length, 1, 'a short pause is not a stop');
   server.setState('stop');
   await until(() => gladys.fake.sceneEvents.length === 2, 2000, 'stopped');
   assert.equal(events()[1][1].state, 'stopped');
