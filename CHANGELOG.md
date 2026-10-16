@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-16
+
 ### Added
 
 - The OwnTone player as a Gladys device: play, pause, previous, next, master volume, playback state
@@ -23,3 +25,6 @@ the notes of the version's GitHub Release.
 - Scene triggers: playback started, playback stopped, output disappeared, output appeared.
 - Scene actions: play a playlist on chosen outputs, set a volume, stop everything.
 - Texts and documentation in English, French, German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-owntone/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-owntone/releases/tag/v1.0.0
