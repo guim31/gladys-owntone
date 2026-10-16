@@ -7,7 +7,18 @@ test('the address: host, host:port, IPv6, the web interface URL', () => {
   assert.deepEqual(parseHost(' owntone.lan:3690 '), { host: 'owntone.lan', port: 3690 });
   assert.deepEqual(parseHost('[2001:db8::1]:3689'), { host: '2001:db8::1', port: 3689 });
   assert.deepEqual(parseHost('http://192.0.2.10:3689/'), { host: '192.0.2.10', port: 3689 });
-  for (const bad of ['', '  ', 'https://owntone.lan', 'tcp://x', 'a b', 'user@host', 'x/y']) {
+  assert.deepEqual(parseHost('nas.lan:80'), { host: 'nas.lan', port: 80 });
+  for (const bad of [
+    '',
+    '  ',
+    'https://owntone.lan',
+    'tcp://x',
+    'a b',
+    'user@host',
+    'x/y',
+    'host:0',
+    'host:70000',
+  ]) {
     assert.equal(parseHost(bad), null, bad);
   }
 });

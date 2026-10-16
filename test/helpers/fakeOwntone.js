@@ -60,6 +60,7 @@ export class FakeOwntone {
     this.queue = [];
     this.requests = [];
     this.silent = false; // accepts, never answers
+    this.errorStatus = 0; // when set, every read answers this HTTP status
     this.failing = new Set(); // output ids that refuse to start (400)
     this.server = null;
     this.wss = null;
@@ -77,6 +78,15 @@ export class FakeOwntone {
     await new Promise((resolve) => this.server.listen(this.port, '127.0.0.1', resolve));
     this.port = this.server.address().port;
     if (this.websocket) {
+      await this.startWebSocket();
+    }
+    this.config = { ...this.config, websocket_port: this.websocket ? this.wsPort : 0 };
+    return this;
+  }
+
+  /** The notification WebSocket alone (OwnTone opens it after its API). */
+  async startWebSocket() {
+    {
       this.wss = new WebSocketServer({
         host: '127.0.0.1',
         port: this.wsPort,
@@ -91,16 +101,18 @@ export class FakeOwntone {
         });
       });
     }
-    this.config = { ...this.config, websocket_port: this.websocket ? this.wsPort : 0 };
-    return this;
   }
 
-  async close() {
+  async stopWebSocket() {
     for (const client of this.wss?.clients ?? []) {
       client.terminate();
     }
     await new Promise((resolve) => (this.wss ? this.wss.close(resolve) : resolve()));
     this.wss = null;
+  }
+
+  async close() {
+    await this.stopWebSocket();
     for (const socket of this.sockets ?? []) {
       socket.destroy();
     }
@@ -203,6 +215,7 @@ export class FakeOwntone {
     const path = url.pathname.replace(/^\/api\//, '');
     const query = url.searchParams;
     if (method === 'GET') {
+      if (this.errorStatus && path !== 'config') return this.errorStatus;
       if (path === 'config') return this.config;
       if (path === 'player') return this.player;
       if (path === 'outputs') return { outputs: this.outputs };

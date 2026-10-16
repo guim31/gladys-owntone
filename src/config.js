@@ -46,9 +46,15 @@ export function parseHost(raw) {
   if (url.hostname === '') {
     return null;
   }
+  // The port as typed: URL drops a default port (`nas:80`).
+  const typedPort = typed.match(/^(?:\[[^\]]+\]|[^:]+):(\d+)$/)?.[1];
+  const port = typedPort === undefined ? null : portOf(typedPort);
+  if (typedPort !== undefined && port === null) {
+    return null;
+  }
   // The API is reached as http://host:port: an IPv6 address keeps its
   // brackets in the URL, not in `host`.
-  return { host: url.hostname.replace(/^\[|\]$/g, ''), port: url.port ? Number(url.port) : null };
+  return { host: url.hostname.replace(/^\[|\]$/g, ''), port };
 }
 
 /**

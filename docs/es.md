@@ -101,7 +101,7 @@ volumen, subir el volumen (de 5 en 5).
   abra desde otro dispositivo de la red.
 - **«OwnTone rechaza la contraseña»**: introduzca el `admin_password` de `owntone.conf`. OwnTone lo
   exige para cualquier dirección fuera de sus `trusted_networks`.
-- **«OwnTone rechaza Gladys»**: OwnTone no tiene `admin_password` y no confía en la red de Gladys:
+- **«OwnTone rechaza a Gladys»**: OwnTone no tiene `admin_password` y no confía en la red de Gladys:
   defina uno, o añada esa red a `trusted_networks`.
 - **Los estados solo llegan cada 5 segundos**: el puerto WebSocket de OwnTone (3688) no es
   accesible, o `websocket_port` vale 0. La integración lee entonces OwnTone cada 5 segundos. Los

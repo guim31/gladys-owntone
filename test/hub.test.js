@@ -304,6 +304,19 @@ test('without WebSocket (port 0): the container reads OwnTone itself, Gladys nev
   assert.equal(world.hub.client.push, false);
 });
 
+test('a WebSocket missing at the connection is tried again: back to push', async (t) => {
+  const server = await new FakeOwntone().listen();
+  await server.stopWebSocket();
+  const world = await createWorld({ server });
+  t.after(() => world.stop());
+  await createAll(world);
+  assert.equal(world.hub.client.push, false, 'polling first');
+  await server.startWebSocket();
+  await until(() => world.hub.client.push === true, 3000, 'push again');
+  server.setOutput(FIFO, { volume: 21 });
+  await until(() => state(world.gladys, FIFO_ID, 'volume') === 21, 300, 'pushed');
+});
+
 test('admin password: sent as HTTP Basic "admin"; a wrong one shows on the integration page', async (t) => {
   const server = await new FakeOwntone({ password: 'bench-secret' }).listen();
   const world = await createWorld({ server, config: { password: 'wrong' } });

@@ -85,10 +85,10 @@ export const STATUS_TEXT = {
     es: 'La dirección del servidor no es válida: una dirección IP o un nombre de host, con :puerto si hace falta.',
   },
   unreachable: {
-    en: 'The OwnTone server does not answer. Check its address, its port (3689) and that it runs.',
-    fr: 'Le serveur OwnTone ne répond pas. Vérifiez son adresse, son port (3689) et qu’il tourne.',
-    de: 'Der OwnTone-Server antwortet nicht. Prüfe Adresse, Port (3689) und ob er läuft.',
-    es: 'El servidor OwnTone no responde. Compruebe su dirección, su puerto (3689) y que esté en marcha.',
+    en: 'The OwnTone server does not answer. Check its address, its port (3689 by default) and that it runs.',
+    fr: 'Le serveur OwnTone ne répond pas. Vérifiez son adresse, son port (3689 par défaut) et qu’il tourne.',
+    de: 'Der OwnTone-Server antwortet nicht. Prüfe Adresse, Port (standardmäßig 3689) und ob er läuft.',
+    es: 'El servidor OwnTone no responde. Compruebe su dirección, su puerto (3689 por defecto) y que esté en marcha.',
   },
   auth: {
     en: 'OwnTone refused the password: type its admin_password in the configuration.',
@@ -100,7 +100,7 @@ export const STATUS_TEXT = {
     en: 'OwnTone refuses Gladys: set an admin_password in owntone.conf, or trust the network of Gladys.',
     fr: 'OwnTone refuse Gladys : définissez un admin_password dans owntone.conf, ou faites confiance au réseau de Gladys.',
     de: 'OwnTone lehnt Gladys ab: Setze ein admin_password in owntone.conf oder vertraue dem Netz von Gladys.',
-    es: 'OwnTone rechaza Gladys: defina un admin_password en owntone.conf, o confíe en la red de Gladys.',
+    es: 'OwnTone rechaza a Gladys: defina un admin_password en owntone.conf, o confíe en la red de Gladys.',
   },
 };
 

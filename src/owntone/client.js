@@ -191,6 +191,31 @@ export class OwnToneClient extends EventEmitter {
     this.emit('open', { push: this.push, config });
   }
 
+  /** Opens the WebSocket of a client that opened without it; resolves true on success. */
+  async upgrade() {
+    const wsPort = Number(this.serverConfig?.websocket_port);
+    if (
+      this.push ||
+      !this.live ||
+      !(Number.isInteger(wsPort) && wsPort > 0) ||
+      !this.WebSocketClass
+    ) {
+      return false;
+    }
+    const generation = this.generation;
+    const socket = await this.#openSocket(wsPort);
+    if (!socket) {
+      return false;
+    }
+    if (generation !== this.generation || !this.live || this.push) {
+      socket.close();
+      return false;
+    }
+    this.socket = socket;
+    this.push = true;
+    return true;
+  }
+
   /** Resolves the open WebSocket, or null when it cannot be opened. */
   #openSocket(wsPort) {
     return new Promise((resolve) => {

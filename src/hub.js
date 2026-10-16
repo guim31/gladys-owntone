@@ -101,7 +101,10 @@ export class Hub {
     this.reloadTimer = null;
     this.stopTimer = null;
     this.reloading = null;
+    this.reloadingClient = null;
     this.reloadAgain = false;
+    this.readFailing = false;
+    this.upgradeAt = 0;
     this.widgetRefreshAt = 0;
     this.widgetTimer = null;
     this.stopped = false;
@@ -138,6 +141,7 @@ export class Hub {
     // The player of the old server goes offline in Gladys, rather than keep
     // "playing" forever.
     await this.publishStates();
+    this.known.clear();
     this.model = emptyModel();
     this.seen = null;
     this.serverError = undefined;
@@ -257,7 +261,10 @@ export class Hub {
       logger.debug(`OwnTone server still unavailable (${reason})`);
     }
     this.serverError = reason;
+    this.online = false;
     this.#setStatus(false, code);
+    // Offline states, re-published by the heartbeat while the outage lasts.
+    this.#changed();
   }
 
   #onNotify(client, events) {
@@ -270,16 +277,20 @@ export class Hub {
 
   /** Reads the player, the outputs and what plays; resolves false on failure. */
   reload() {
-    if (this.reloading) {
+    const client = this.client;
+    if (this.reloading && this.reloadingClient === client) {
       // A change during a read: read once more after it.
       this.reloadAgain = true;
       return this.reloading;
     }
-    const client = this.client;
-    this.reloading = (async () => {
+    this.reloadingClient = client;
+    const reading = (async () => {
       if (!client?.live) {
         return false;
       }
+      // A drop during the read (WebSocket closed) makes its answer stale.
+      const generation = client.generation;
+      const stale = () => client !== this.client || client.generation !== generation;
       try {
         const [player, outputs] = await Promise.all([
           client.request('GET', 'player'),
@@ -293,10 +304,14 @@ export class Hub {
                 parsedPlayer.itemId,
               )
             : null;
-        if (client !== this.client) {
+        if (stale()) {
           return false;
         }
         client.healthy();
+        if (this.readFailing) {
+          this.readFailing = false;
+          logger.info('OwnTone answers again');
+        }
         this.model.player = parsedPlayer;
         this.model.item = item;
         this.model.outputs = parseOutputs(outputs);
@@ -312,25 +327,32 @@ export class Hub {
         this.#changed({ now: true });
         return true;
       } catch (err) {
-        if (client !== this.client) {
+        if (stale()) {
           return false;
         }
         if (err instanceof OwnToneError && err.code !== 'http' && err.code !== 'protocol') {
           // A server that does not answer, or no longer lets us in.
           client.reset(err.message);
         } else {
-          logger.warn(`Cannot read the OwnTone server: ${err.message}`);
+          // One line when the reads start failing, one when they work again.
+          const log = this.readFailing ? logger.debug : logger.warn;
+          this.readFailing = true;
+          log(`Cannot read the OwnTone server: ${err.message}`);
         }
         return false;
       }
     })().finally(() => {
-      this.reloading = null;
+      if (this.reloading === reading) {
+        this.reloading = null;
+        this.reloadingClient = null;
+      }
       if (this.reloadAgain) {
         this.reloadAgain = false;
         this.#reloadSoon();
       }
     });
-    return this.reloading;
+    this.reloading = reading;
+    return reading;
   }
 
   #reloadSoon() {
@@ -352,6 +374,14 @@ export class Hub {
     const client = this.client;
     const period = client.push ? this.timings.resyncMs : this.timings.pollMs;
     this.resyncTimer = setTimeout(async () => {
+      // Without push (WebSocket not up when OwnTone was reached), try it again
+      // once per resync period: the 5 s reads are only a fallback.
+      if (!client.push && this.now() - this.upgradeAt >= this.timings.resyncMs) {
+        this.upgradeAt = this.now();
+        if (await client.upgrade()) {
+          logger.info('OwnTone WebSocket available: notifications back');
+        }
+      }
       await this.reload();
       if (client === this.client && client.live) {
         this.#scheduleResync();

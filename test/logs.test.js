@@ -134,3 +134,18 @@ test('the password never reaches the logs', async (t) => {
     lines.join('\n'),
   );
 });
+
+test('reads answered with an error: one line, then one when they work again', async (t) => {
+  const world = await createWorld({ timings: { resyncMs: 30 } });
+  t.after(() => world.stop());
+  await createAll(world);
+  const lines = captureLogs(t);
+  world.server.errorStatus = 502; // a proxy in front of OwnTone, every read refused
+  await sleep(250); // several full reads
+  world.server.errorStatus = 0;
+  await sleep(100);
+  assert.deepEqual(strip(lines), [
+    '[WARN] [owntone-hub] Cannot read the OwnTone server: GET player: HTTP 502',
+    '[INFO] [owntone-hub] OwnTone answers again',
+  ]);
+});
