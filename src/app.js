@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
+import * as catalog from './catalog.js';
 import { normalizeConfig } from './config.js';
 import { Hub } from './hub.js';
 import { SCENE_ACTIONS } from './scenes.js';
@@ -68,6 +69,15 @@ export function registerHandlers(gladys, options = {}) {
   // "Update" in the Discovery tab: the SDK forgot the states, publish them again.
   gladys.onDeviceUpdated(whenReady((device) => hub.onDeviceCreated(device)));
   gladys.onConfigUpdated(whenReady((config) => hub.reconfigure(normalizeConfig(config))));
+
+  // The Gladys 5.3 music panel: queue, browse, search, play (manifest
+  // `music`), and the bytes of the artworks (with the password).
+  gladys.onMusicBrowse(whenReady((device, options) => catalog.browse(hub, device, options)));
+  gladys.onMusicSearch(whenReady((device, options) => catalog.search(hub, device, options)));
+  gladys.onMusicPlay(whenReady((device, media, mode) => catalog.play(hub, device, media, mode)));
+  gladys.onMusicQueueGet(whenReady((device, options) => catalog.queueGet(hub, device, options)));
+  gladys.onMusicQueuePlay(whenReady((device, index) => catalog.queuePlay(hub, device, index)));
+  gladys.onMusicGetArtwork(whenReady((key) => catalog.artwork(hub, key)));
 
   for (const [key, handler] of Object.entries(SCENE_ACTIONS)) {
     gladys.onSceneAction(

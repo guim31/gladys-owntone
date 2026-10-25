@@ -62,6 +62,14 @@ test('discovery: the player and one device per output, nothing polled by Gladys'
     'pause',
     'previous',
     'next',
+    'title',
+    'artist',
+    'album',
+    'artwork',
+    'duration',
+    'position',
+    'shuffle',
+    'repeat',
     'now_playing',
   ]);
   assert.deepEqual(keys(AIRPLAY_ID), ['selected', 'volume']);
@@ -72,7 +80,9 @@ test('states once the devices are added, then what changes, pushed by the WebSoc
   const world = await ready();
   t.after(() => world.stop());
   const { gladys, server } = world;
-  assert.equal(state(gladys, PLAYER_ID, 'playback_state'), 0);
+  // Stopped: IDLE (2) since 1.1.0, nothing loaded.
+  assert.equal(state(gladys, PLAYER_ID, 'playback_state'), 2);
+  assert.equal(state(gladys, PLAYER_ID, 'title'), '');
   assert.equal(state(gladys, PLAYER_ID, 'now_playing'), 'Stopped');
   assert.equal(state(gladys, PLAYER_ID, 'volume'), 50);
   assert.equal(state(gladys, AIRPLAY_ID, 'selected'), 0);
@@ -271,7 +281,9 @@ test('OwnTone restarted: offline in Gladys, then everything read again', async (
   await server.close();
   await until(() => gladys.fake.connectionStatus.connected === false, 2000, 'lost');
   await until(() => state(gladys, PLAYER_ID, 'now_playing') === 'Offline', 2000, 'offline');
-  assert.equal(state(gladys, PLAYER_ID, 'playback_state'), 0);
+  // Offline: IDLE, nothing shown.
+  assert.equal(state(gladys, PLAYER_ID, 'playback_state'), 2);
+  assert.equal(state(gladys, PLAYER_ID, 'title'), '');
   assert.equal(state(gladys, FIFO_ID, 'selected'), 0);
   const ack = await setValue(world, PLAYER_ID, 'pause', 1);
   assert.match(ack.error, /unreachable/);

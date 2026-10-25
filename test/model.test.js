@@ -22,20 +22,38 @@ test('player, outputs and the item being played, as recorded', async () => {
   );
   const item = parseItem(await fixture('queue-item'), player.itemId);
   assert.deepEqual(item, {
+    id: 4,
+    position: 0,
     title: 'Test tone 1',
     artist: 'Bench Ensemble',
     album: 'Sine Sessions',
+    lengthMs: 40000,
+    uri: 'library:track:3',
+    stream: false,
+    artworkUrl: './artwork/item/3',
   });
+  assert.deepEqual(
+    [player.shuffle, player.repeat, player.progressMs, player.lengthMs],
+    [false, 'off', 760, 40000],
+  );
   assert.equal(trackText(item), 'Test tone 1 — Bench Ensemble');
 });
 
 test('odd answers become neutral values', () => {
-  assert.deepEqual(parsePlayer(null), { state: 'stop', volume: null, itemId: 0 });
-  assert.deepEqual(parsePlayer({ state: 'dance', volume: 250, item_id: -3 }), {
-    state: 'stop',
-    volume: 100,
-    itemId: 0,
-  });
+  const neutral = { shuffle: false, repeat: 'off', progressMs: 0, lengthMs: 0 };
+  assert.deepEqual(parsePlayer(null), { state: 'stop', volume: null, itemId: 0, ...neutral });
+  assert.deepEqual(
+    parsePlayer({
+      state: 'dance',
+      volume: 250,
+      item_id: -3,
+      shuffle: 'yes',
+      repeat: 'twice',
+      item_progress_ms: -5,
+      item_length_ms: 'x',
+    }),
+    { state: 'stop', volume: 100, itemId: 0, ...neutral },
+  );
   const outputs = parseOutputs({
     outputs: [{ id: 7, name: ' ', volume: 'x' }, { id: '7' }, null, { name: 'no id' }],
   });

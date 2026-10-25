@@ -8,11 +8,12 @@ cambio en directo por su WebSocket. Sin nube, sin cuenta.
 
 > **Probada con un OwnTone 29.3 real en Docker, sin altavoces AirPlay ni Chromecast: sus comentarios
 > son bienvenidos.** La reproducción, los volúmenes, la selección de salidas, las notificaciones y el
-> reinicio de OwnTone se comprobaron de verdad, con sus salidas local y fifo.
+> reinicio de OwnTone se comprobaron de verdad, con sus salidas local y fifo, así como el reproductor
+> Música de Gladys 5.3 (carátulas, cola, búsqueda, navegación, aleatorio, repetición, avance).
 
 ## Requisitos
 
-- Gladys Assistant 5.1 o posterior.
+- Gladys Assistant 5.3 o posterior (la versión 1.0 de la integración sigue para Gladys 5.1 y 5.2).
 - Un servidor OwnTone (versión 28 o posterior) accesible desde Gladys en el puerto de su interfaz
   web, 3689 por defecto, y en su puerto WebSocket (`websocket_port` en `owntone.conf`, 3688 por
   defecto).
@@ -39,7 +40,10 @@ Abra después la pestaña **Descubrir** y añada el reproductor y las salidas qu
 El reproductor de OwnTone, uno por servidor:
 
 - **Volumen** (0 a 100): el volumen general. OwnTone ajusta a él cada salida seleccionada.
-- **Estado de reproducción**: reproduciendo o no.
+- **Estado de reproducción**: en pausa (0), reproduciendo (1) o detenido (2); también se controla.
+- **Título**, **Artista**, **Álbum**, **Carátula**, **Duración** y **Posición** de la pista actual;
+  la posición se puede cambiar (avanzar o retroceder en la pista).
+- **Reproducción aleatoria** y **Repetición** (desactivada, todo, una pista), ambas controlables.
 - **Reproducir**, **Pausa**, **Anterior**, **Siguiente**: botones.
 - **Reproduciendo**: título y artista, con el estado cuando está en pausa o detenido.
 
@@ -57,6 +61,35 @@ fifo.
 
 Una salida que abandona OwnTone (altavoz apagado, fuera de la red) aparece como no seleccionada y
 conserva su dispositivo en Gladys; vuelve por sí sola.
+
+## Reproductor Música de Gladys 5.3
+
+Desde Gladys 5.3, el cuadro **Música** del panel es un verdadero reproductor, y OwnTone lo llena por
+completo:
+
+- la carátula, el título, el artista y el álbum, una barra de progreso que se arrastra para avanzar,
+  reproducción y pausa, anterior, siguiente, reproducción aleatoria, repetición y el volumen general;
+- la **cola** (botón lista): la cola de OwnTone en el orden en que suena (mezclada mientras la
+  reproducción aleatoria está activa), la pista actual resaltada; un toque reproduce otra;
+- **la búsqueda y la navegación** (botón lupa): la búsqueda abarca las pistas, artistas, álbumes y
+  listas de la biblioteca; la navegación ofrece **Listas de reproducción**, **Artistas**, **Álbumes** y
+  **Archivos** (las carpetas de la biblioteca). Un toque reproduce el elemento en lugar de la cola; el
+  gesto secundario lo añade después de la pista actual o al final de la cola. Una carpeta se abre, no
+  se reproduce.
+
+La acción de escena **Reproducir música en un altavoz** de Gladys elige una lista, un álbum, un
+artista o una pista en el mismo panel. Elegida en el reproductor, suena en las salidas ya
+seleccionadas; elegida en una **salida**, hace de esa salida la única seleccionada y luego inicia la
+música.
+
+**Un reproductor añadido con la versión 1.0** funciona como antes, sin las nuevas funciones: abra la
+pestaña **Descubrir** de la integración y pulse **Actualizar** en el reproductor (Gladys lo propone
+porque las funciones cambiaron). Las nuevas funciones se añaden; las antiguas conservan sus escenas y
+paneles. Un cambio: **Estado de reproducción** vale 2 en lugar de 0 cuando OwnTone está detenido o
+sin conexión.
+
+Las carátulas vienen de OwnTone, que las ajusta él mismo al tamaño pedido (400 píxeles para el
+reproductor, 128 para las listas): incluso una carátula de varios megabytes en el disco se muestra.
 
 ## Widget del panel
 
@@ -116,7 +149,9 @@ volumen, subir el volumen (de 5 en 5).
   propio).
 - Sin emparejamiento de altavoces AirPlay que piden un código, ni contraseña de salida: hágalo una vez
   en la interfaz web de OwnTone.
-- Una lista se elige por su nombre o su URI: sin navegación por la biblioteca, los álbumes o los
-  artistas.
+- La acción **Reproducir una lista** de la integración elige una lista por su nombre o su URI; para
+  recorrer la biblioteca, use la acción **Reproducir música en un altavoz** de Gladys 5.3.
+- Sin silencio: la API de OwnTone no lo tiene (baje el volumen).
+- Reproducir un artista añade todas sus pistas a la cola.
 - Desarrollada sin altavoces AirPlay ni Chromecast: su comportamiento procede de la API de OwnTone, no
   de una prueba con el hardware. Sus comentarios son bienvenidos.

@@ -1,0 +1,63 @@
+{
+  "items": [
+    {
+      "id": "439870350122025993",
+      "name": "Bench Radio",
+      "name_sort": "Bench Radio",
+      "album_count": 1,
+      "track_count": 1,
+      "length_ms": 0,
+      "time_added": "2026-10-25T18:48:29Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "url",
+      "uri": "library:artist:439870350122025993",
+      "artwork_url": "./artwork/group/8"
+    },
+    {
+      "id": "6478753140377863178",
+      "name": "Otherband",
+      "name_sort": "Otherband",
+      "album_count": 1,
+      "track_count": 2,
+      "length_ms": 65014,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "uri": "library:artist:6478753140377863178",
+      "artwork_url": "./artwork/group/2"
+    },
+    {
+      "id": "3248098815983757786",
+      "name": "Pngband",
+      "name_sort": "Pngband",
+      "album_count": 1,
+      "track_count": 1,
+      "length_ms": 32507,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "uri": "library:artist:3248098815983757786",
+      "artwork_url": "./artwork/group/6"
+    },
+    {
+      "id": "1672321702783945551",
+      "name": "Testband",
+      "name_sort": "Testband",
+      "album_count": 1,
+      "track_count": 3,
+      "length_ms": 97521,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "uri": "library:artist:1672321702783945551",
+      "artwork_url": "./artwork/group/4"
+    }
+  ],
+  "total": 4,
+  "offset": 0,
+  "limit": -1
+}

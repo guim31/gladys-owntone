@@ -49,8 +49,12 @@ test('the manifest version is the package version, and the image is tagged with 
   assert.ok(manifest.docker_image.endsWith(`:${manifest.version}`), manifest.docker_image);
 });
 
-test('scene triggers, scene actions and widgets: Gladys >= 5.1.0 (no widget form)', () => {
-  assert.equal(manifest.gladys_version, '>=5.1.0');
+test('the music player of Gladys 5.3: gladys_version >= 5.3.0, operations declared', () => {
+  assert.equal(manifest.gladys_version, '>=5.3.0');
+  assert.deepEqual(manifest.music, { browse: true, search: true, queue: true, append: true });
+});
+
+test('widgets: no setting (nothing to choose)', () => {
   for (const widget of manifest.widgets) {
     assert.equal(widget.settings, undefined, 'no setting: nothing to choose');
   }

@@ -1,0 +1,28 @@
+{
+  "directories": [
+    {
+      "path": "/srv/music/Big"
+    },
+    {
+      "path": "/srv/music/Playlists"
+    },
+    {
+      "path": "/srv/music/Png"
+    },
+    {
+      "path": "/srv/music/Small"
+    }
+  ],
+  "tracks": {
+    "items": [],
+    "total": 0,
+    "offset": 0,
+    "limit": -1
+  },
+  "playlists": {
+    "items": [],
+    "total": 0,
+    "offset": 0,
+    "limit": -1
+  }
+}

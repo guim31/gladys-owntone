@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": "4648682850311983406",
+      "name": "Small",
+      "name_sort": "Small",
+      "artist": "Testband",
+      "artist_id": "1672321702783945551",
+      "track_count": 3,
+      "length_ms": 97521,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "year": 0,
+      "uri": "library:album:4648682850311983406",
+      "artwork_url": "./artwork/group/3"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": -1
+}

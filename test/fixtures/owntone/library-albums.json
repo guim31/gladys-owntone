@@ -1,0 +1,71 @@
+{
+  "items": [
+    {
+      "id": "7964117396731958995",
+      "name": "Big",
+      "name_sort": "Big",
+      "artist": "Otherband",
+      "artist_id": "6478753140377863178",
+      "track_count": 2,
+      "length_ms": 65014,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "year": 0,
+      "uri": "library:album:7964117396731958995",
+      "artwork_url": "./artwork/group/1"
+    },
+    {
+      "id": "2781180431750008189",
+      "name": "Png",
+      "name_sort": "Png",
+      "artist": "Pngband",
+      "artist_id": "3248098815983757786",
+      "track_count": 1,
+      "length_ms": 32507,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "year": 0,
+      "uri": "library:album:2781180431750008189",
+      "artwork_url": "./artwork/group/5"
+    },
+    {
+      "id": "4648682850311983406",
+      "name": "Small",
+      "name_sort": "Small",
+      "artist": "Testband",
+      "artist_id": "1672321702783945551",
+      "track_count": 3,
+      "length_ms": 97521,
+      "time_added": "2026-10-25T18:48:23Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "file",
+      "year": 0,
+      "uri": "library:album:4648682850311983406",
+      "artwork_url": "./artwork/group/3"
+    },
+    {
+      "id": "3904801882971865543",
+      "name": "Unknown album",
+      "name_sort": "Unknown album",
+      "artist": "Bench Radio",
+      "artist_id": "439870350122025993",
+      "track_count": 1,
+      "length_ms": 0,
+      "time_added": "2026-10-25T18:48:29Z",
+      "in_progress": false,
+      "media_kind": "music",
+      "data_kind": "url",
+      "year": 0,
+      "uri": "library:album:3904801882971865543",
+      "artwork_url": "./artwork/group/7"
+    }
+  ],
+  "total": 4,
+  "offset": 0,
+  "limit": -1
+}

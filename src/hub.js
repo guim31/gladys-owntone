@@ -7,7 +7,9 @@
 // outputs, the item being played), coalesced. A full read every minute
 // catches anything missed and tells a dead server from a quiet one; without
 // WebSocket (port 0, firewall), the read runs every 5 seconds instead. Only
-// the changes reach Gladys (publishChangedStates), with a heartbeat.
+// the changes reach Gladys: the music features through publishNowPlaying
+// (Gladys 5.3: the SDK diffs them, the position is a sample), the rest
+// through publishChangedStates, with a heartbeat.
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
@@ -19,11 +21,12 @@ import {
   buildPlayerDevice,
   buildPlayerStates,
   featureKeyOf,
+  nowPlaying,
   outputIds,
   playerIds,
 } from './devices.js';
 import { OwnToneClient, OwnToneError } from './owntone/client.js';
-import { parseItem, parseOutputs, parsePlayer } from './owntone/model.js';
+import { REPEAT_MODES, parseItem, parseOutputs, parsePlayer } from './owntone/model.js';
 import { STATUS_TEXT, commandMessage } from './texts.js';
 
 const logger = createLogger({ name: 'owntone-hub' });
@@ -64,9 +67,22 @@ export class CommandError extends Error {
   }
 }
 
+// The size asked to OwnTone for the now-playing artwork (Gladys renders it
+// under 400 px wide), and for the thumbnails of the lists (64 px, twice for
+// high-density screens).
+export const ARTWORK_SIZES = { NOW_PLAYING: 400, THUMBNAIL: 128 };
+
 const emptyModel = () => ({
   server: { version: '' },
-  player: { state: 'stop', volume: null, itemId: 0 },
+  player: {
+    state: 'stop',
+    volume: null,
+    itemId: 0,
+    shuffle: false,
+    repeat: 'off',
+    progressMs: 0,
+    lengthMs: 0,
+  },
   item: null,
   outputs: new Map(),
 });
@@ -547,7 +563,8 @@ export class Hub {
     const created = new Set((this.gladys.devices ?? []).map((device) => device.external_id));
     const states = [];
     // Before the first read, nothing is known: nothing to say.
-    if (created.has(playerIds(this.gladys).device) && this.serverError !== undefined) {
+    const player = created.has(playerIds(this.gladys).device) && this.serverError !== undefined;
+    if (player) {
       states.push(...buildPlayerStates(this.gladys, this.model, this.online, this.language));
     }
     for (const output of this.known.values()) {
@@ -562,6 +579,14 @@ export class Hub {
       return;
     }
     try {
+      if (player) {
+        // The music features: one channel each (volume included), diffed by
+        // the SDK; the position only on a change of state or track, or a seek.
+        await this.gladys.publishNowPlaying(
+          playerIds(this.gladys).device,
+          nowPlaying(this.model, this.online, (item) => this.artworkUrl(item)),
+        );
+      }
       await this.gladys.publishChangedStates(states, { heartbeat: HEARTBEAT_MS });
       if (this.publishFailing) {
         this.publishFailing = false;
@@ -572,6 +597,11 @@ export class Hub {
       this.publishFailing = true;
       log(`Cannot publish the states: ${err.message}`);
     }
+  }
+
+  /** The URL of an item's artwork at a size (OwnTone scales it), or null. */
+  artworkUrl(item, size = ARTWORK_SIZES.NOW_PLAYING) {
+    return this.client?.artworkUrl(item?.artworkUrl, size) ?? null;
   }
 
   /** A device was added in Gladys: its states, now that its features exist. */
@@ -646,8 +676,11 @@ export class Hub {
     return found.output;
   }
 
-  /** One call, errors turned into coded messages, the state read again soon. */
-  async call(method, path, body, { refusedCode = 'refused' } = {}) {
+  /**
+   * One call, errors turned into coded messages, the state read again soon
+   * (`reload: false` for a read that changes nothing: the catalog).
+   */
+  async call(method, path, body, { refusedCode = 'refused', reload = true } = {}) {
     this.#ready();
     let result;
     try {
@@ -666,7 +699,9 @@ export class Hub {
       throw err;
     }
     // The WebSocket tells too, but not without it (polling): read now.
-    this.#reloadSoon();
+    if (reload) {
+      this.#reloadSoon();
+    }
     return result;
   }
 
@@ -716,6 +751,45 @@ export class Hub {
       throw err;
     }
     logger.info(`Player: ${command}`);
+  }
+
+  /** playback_state written by Gladys: 0 pause, 1 play, 2 stop. */
+  async setPlaybackState(value) {
+    const command = { 0: 'pause', 1: 'play', 2: 'stop' }[Number(value)];
+    if (!command) {
+      throw new CommandError('bad_command', this.language);
+    }
+    // OwnTone answers 500 to a pause while stopped: nothing to do.
+    if (command === 'pause' && this.model.player.state !== 'play') {
+      return;
+    }
+    await this.command(command);
+  }
+
+  /** position written by Gladys: a seek, in seconds. */
+  async seek(seconds) {
+    const value = Number(seconds);
+    if (!Number.isFinite(value) || value < 0) {
+      throw new CommandError('bad_command', this.language);
+    }
+    await this.call('PUT', `player/seek?position_ms=${Math.round(value * 1000)}`);
+    logger.info(`Seek ${Math.round(value)} s`);
+  }
+
+  async setShuffle(value) {
+    const on = Number(value) === 1;
+    await this.call('PUT', `player/shuffle?state=${on}`);
+    logger.info(`Shuffle ${on ? 'on' : 'off'}`);
+  }
+
+  /** repeat written by Gladys: 0 off, 1 all, 2 one. */
+  async setRepeat(value) {
+    const mode = REPEAT_MODES[Number(value)];
+    if (!mode) {
+      throw new CommandError('bad_command', this.language);
+    }
+    await this.call('PUT', `player/repeat?state=${mode}`);
+    logger.info(`Repeat ${mode}`);
   }
 
   async playPause() {
@@ -814,6 +888,14 @@ export class Hub {
       case 'previous':
       case 'next':
         return this.command(key);
+      case 'playback_state':
+        return this.setPlaybackState(value);
+      case 'position':
+        return this.seek(value);
+      case 'shuffle':
+        return this.setShuffle(value);
+      case 'repeat':
+        return this.setRepeat(value);
       default:
         throw new Error(`Unknown feature ${key}`);
     }

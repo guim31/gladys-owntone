@@ -1,0 +1,19 @@
+{
+  "directories": [
+    {
+      "path": "/srv"
+    }
+  ],
+  "tracks": {
+    "items": [],
+    "total": 0,
+    "offset": 0,
+    "limit": -1
+  },
+  "playlists": {
+    "items": [],
+    "total": 0,
+    "offset": 0,
+    "limit": -1
+  }
+}

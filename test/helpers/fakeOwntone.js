@@ -38,6 +38,46 @@ export const MORNING = 'library:playlist:7';
 
 const recordedItems = fixture('queue-add').items;
 
+// The library recorded on the bench (albums Small, Big and Png, the playlists
+// Morning and Radio, a stream), for the catalog of the Gladys 5.3 music panel.
+export const LIBRARY = {
+  albums: fixture('library-albums'),
+  artists: fixture('library-artists'),
+  albumTracks: fixture('album-tracks'),
+  artistAlbums: fixture('artist-albums'),
+  playlists: fixture('playlists-root'),
+  radioTracks: fixture('playlist-radio-tracks'),
+  filesRoot: fixture('files-root'),
+  filesMusic: fixture('files-music'),
+  filesSmall: fixture('files-small'),
+  search: fixture('search-all'),
+};
+export const SMALL = LIBRARY.albums.items.find((a) => a.name === 'Small');
+export const RADIO_TRACK = LIBRARY.radioTracks.items[0];
+const TRACKS = [...LIBRARY.albumTracks.items, RADIO_TRACK];
+
+// Artwork bytes: a tiny JPEG, and a PNG that is too large at 400 px (OwnTone
+// keeps a PNG a PNG when it scales it).
+export const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(100)]);
+const PNG = (size) =>
+  Buffer.concat([Buffer.from('\x89PNG\r\n\x1a\n', 'latin1'), Buffer.alloc(size)]);
+/** Track id whose artwork is a 400 KB PNG at 400 px, 100 KB below. */
+export const HEAVY_ARTWORK_TRACK = 5;
+
+/** A library track (or the stream) as a queue item. */
+const queueItem = (track, id) => ({
+  id,
+  position: 0,
+  track_id: track.id,
+  title: track.title,
+  artist: track.artist,
+  album: track.album,
+  length_ms: track.length_ms,
+  data_kind: track.data_kind,
+  uri: track.uri,
+  artwork_url: `./artwork/item/${track.id}`,
+});
+
 export class FakeOwntone {
   constructor({ password = '', websocket = true } = {}) {
     this.password = password;
@@ -58,6 +98,7 @@ export class FakeOwntone {
       { id: 9, name: 'Morning jazz', uri: 'library:playlist:9', item_count: 0, folder: false },
     ];
     this.queue = [];
+    this.nextItemId = 100;
     this.requests = [];
     this.silent = false; // accepts, never answers
     this.errorStatus = 0; // when set, every read answers this HTTP status
@@ -187,6 +228,9 @@ export class FakeOwntone {
         return this.#html(res, 401, 'Unauthorized');
       }
     }
+    if (url.pathname.startsWith('/artwork/item/')) {
+      return this.#artwork(res, Number(url.pathname.split('/').at(-1)), url.searchParams);
+    }
     try {
       const answer = this.#route(req.method, url, body ? JSON.parse(body) : undefined);
       if (answer === undefined) {
@@ -199,6 +243,32 @@ export class FakeOwntone {
     } catch {
       this.#html(res, 400, 'Bad Request');
     }
+  }
+
+  #artwork(res, trackId, query) {
+    if (!TRACKS.some((t) => t.id === trackId) || trackId === RADIO_TRACK.id) {
+      return res.writeHead(204).end();
+    }
+    const size = Number(query.get('maxwidth'));
+    if (trackId === HEAVY_ARTWORK_TRACK) {
+      const image = PNG(size >= 400 ? 400_000 : 100_000);
+      return res.writeHead(200, { 'Content-Type': 'image/png' }).end(image);
+    }
+    return res.writeHead(200, { 'Content-Type': 'image/jpeg' }).end(JPEG);
+  }
+
+  /** The queue in its playing order, positions renumbered. */
+  #renumber() {
+    this.queue.forEach((item, position) => {
+      item.position = position;
+    });
+  }
+
+  /** Library items of a URI (album, track, playlist of the bench), or null. */
+  #tracksOf(uri) {
+    if (uri === SMALL.uri) return LIBRARY.albumTracks.items;
+    const track = TRACKS.find((t) => t.uri === uri);
+    return track ? [track] : null;
   }
 
   #html(res, status, title) {
@@ -221,8 +291,37 @@ export class FakeOwntone {
       if (path === 'outputs') return { outputs: this.outputs };
       if (path === 'queue') {
         const id = Number(query.get('id'));
-        const items = query.has('id') ? this.queue.filter((i) => i.id === id) : this.queue;
+        let items = query.has('id') ? this.queue.filter((i) => i.id === id) : this.queue;
+        if (query.has('start')) {
+          items = items.slice(Number(query.get('start')), Number(query.get('end')));
+        }
         return { version: 1, count: this.queue.length, items };
+      }
+      const paged = (answer) => {
+        const offset = Number(query.get('offset') ?? 0);
+        const limit = query.has('limit') ? Number(query.get('limit')) : answer.items.length;
+        return { ...answer, items: answer.items.slice(offset, offset + limit), offset, limit };
+      };
+      if (path === 'library/albums') return paged(LIBRARY.albums);
+      if (path === 'library/artists') return paged(LIBRARY.artists);
+      if (path === `library/albums/${SMALL.id}/tracks`) return paged(LIBRARY.albumTracks);
+      if (path === `library/artists/${SMALL.artist_id}/albums`) return paged(LIBRARY.artistAlbums);
+      if (path === 'library/playlists/0/playlists') return paged(LIBRARY.playlists);
+      if (path === 'library/playlists/8') return LIBRARY.playlists.items[1];
+      if (path === 'library/playlists/8/tracks') return paged(LIBRARY.radioTracks);
+      if (path === 'library/files') {
+        const directory = query.get('directory');
+        if (directory === null) return LIBRARY.filesRoot;
+        if (directory === '/srv/music') return LIBRARY.filesMusic;
+        if (directory === '/srv/music/Small') return LIBRARY.filesSmall;
+        return 404;
+      }
+      if (path === 'search' && query.get('type') !== 'playlist') {
+        const answer = {};
+        for (const type of query.get('type').split(',')) {
+          answer[type] = LIBRARY.search[type];
+        }
+        return answer;
       }
       if (path === 'search' && query.get('type') === 'playlist') {
         const typed = query.get('query').toLowerCase();
@@ -250,10 +349,23 @@ export class FakeOwntone {
       }
       if (command === 'play') {
         if (this.queue.length === 0) return 500;
+        if (query.has('position')) {
+          const item = this.queue[Number(query.get('position'))];
+          if (!item) return 400;
+          this.player.item_id = item.id;
+        }
         this.player.state = 'play';
         this.player.item_id ||= this.queue[0].id;
+      } else if (command === 'seek') {
+        if (this.player.state === 'stop') return 500;
+        this.player.item_progress_ms = Number(query.get('position_ms'));
+      } else if (command === 'shuffle') {
+        this.player.shuffle = query.get('state') === 'true';
+      } else if (command === 'repeat') {
+        this.player.repeat = query.get('state');
       } else if (command === 'pause') {
-        this.player.state = this.player.state === 'play' ? 'pause' : this.player.state;
+        if (this.player.state === 'stop') return 500;
+        this.player.state = 'pause';
       } else if (command === 'stop') {
         this.player.state = 'stop';
       } else if (command === 'next' || command === 'previous') {
@@ -284,6 +396,23 @@ export class FakeOwntone {
       this.player.volume = this.#selectedVolume();
       this.notify('outputs', 'volume');
       return undefined;
+    }
+    if (method === 'POST' && path === 'queue/items/add' && this.#tracksOf(query.get('uris'))) {
+      const items = this.#tracksOf(query.get('uris')).map((t) => queueItem(t, this.nextItemId++));
+      if (query.get('clear') === 'true') {
+        this.queue = [];
+      }
+      const at = query.has('position') ? Number(query.get('position')) : this.queue.length;
+      this.queue.splice(at, 0, ...items);
+      this.#renumber();
+      if (query.get('playback') === 'start') {
+        this.player.item_id = items[0].id;
+        this.player.state = 'play';
+        this.player.item_progress_ms = 0;
+        this.player.item_length_ms = items[0].length_ms;
+      }
+      this.notify('queue', 'player');
+      return { count: items.length };
     }
     if (method === 'POST' && path === 'queue/items/add') {
       const uri = query.get('uris');
