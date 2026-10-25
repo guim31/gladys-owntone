@@ -16,6 +16,14 @@ export const PLAYER_NAMES = {
     pause: 'Pause',
     previous: 'Previous',
     next: 'Next',
+    title: 'Title',
+    artist: 'Artist',
+    album: 'Album',
+    artwork: 'Artwork',
+    duration: 'Duration',
+    position: 'Position',
+    shuffle: 'Shuffle',
+    repeat: 'Repeat',
     now_playing: 'Now playing',
   },
   fr: {
@@ -25,6 +33,14 @@ export const PLAYER_NAMES = {
     pause: 'Pause',
     previous: 'Précédent',
     next: 'Suivant',
+    title: 'Titre',
+    artist: 'Artiste',
+    album: 'Album',
+    artwork: 'Pochette',
+    duration: 'Durée',
+    position: 'Position',
+    shuffle: 'Lecture aléatoire',
+    repeat: 'Répétition',
     now_playing: 'En cours',
   },
   de: {
@@ -34,6 +50,14 @@ export const PLAYER_NAMES = {
     pause: 'Pause',
     previous: 'Vorheriger Titel',
     next: 'Nächster Titel',
+    title: 'Titel',
+    artist: 'Künstler',
+    album: 'Album',
+    artwork: 'Cover',
+    duration: 'Dauer',
+    position: 'Position',
+    shuffle: 'Zufallswiedergabe',
+    repeat: 'Wiederholung',
     now_playing: 'Aktuelle Wiedergabe',
   },
   es: {
@@ -43,6 +67,14 @@ export const PLAYER_NAMES = {
     pause: 'Pausa',
     previous: 'Anterior',
     next: 'Siguiente',
+    title: 'Título',
+    artist: 'Artista',
+    album: 'Álbum',
+    artwork: 'Carátula',
+    duration: 'Duración',
+    position: 'Posición',
+    shuffle: 'Reproducción aleatoria',
+    repeat: 'Repetición',
     now_playing: 'Reproduciendo',
   },
 };
@@ -174,6 +206,38 @@ export const COMMAND_ERRORS = {
     de: 'Diese Playlist enthält nichts, was OwnTone abspielen kann.',
     es: 'Esta lista de reproducción no tiene nada que OwnTone pueda reproducir.',
   },
+  folder_not_playable: {
+    en: 'A folder cannot be played: open it and play what it holds.',
+    fr: 'Un dossier ne se lit pas : ouvrez-le et lancez ce qu’il contient.',
+    de: 'Ein Ordner lässt sich nicht abspielen: Öffne ihn und spiele seinen Inhalt ab.',
+    es: 'Una carpeta no se puede reproducir: ábrala y reproduzca lo que contiene.',
+  },
+  not_playable: {
+    en: 'OwnTone found nothing to play there.',
+    fr: 'OwnTone n’a rien trouvé à lire ici.',
+    de: 'OwnTone hat hier nichts zum Abspielen gefunden.',
+    es: 'OwnTone no encontró nada que reproducir aquí.',
+  },
+  not_in_queue: {
+    en: 'This item is no longer in the queue.',
+    fr: 'Cet élément n’est plus dans la file d’attente.',
+    de: 'Dieses Element ist nicht mehr in der Warteschlange.',
+    es: 'Este elemento ya no está en la cola.',
+  },
+  no_artwork: {
+    en: 'OwnTone has no cover for this item.',
+    fr: 'OwnTone n’a pas de pochette pour cet élément.',
+    de: 'OwnTone hat kein Cover für dieses Element.',
+    es: 'OwnTone no tiene carátula para este elemento.',
+  },
+};
+
+// The root folders of the catalog (Gladys 5.3 music panel).
+export const CATALOG_TEXT = {
+  playlists: { en: 'Playlists', fr: 'Playlists', de: 'Playlists', es: 'Listas de reproducción' },
+  artists: { en: 'Artists', fr: 'Artistes', de: 'Künstler', es: 'Artistas' },
+  albums: { en: 'Albums', fr: 'Albums', de: 'Alben', es: 'Álbumes' },
+  files: { en: 'Files', fr: 'Fichiers', de: 'Dateien', es: 'Archivos' },
 };
 
 export const commandMessage = (code) => COMMAND_ERRORS[code] ?? COMMAND_ERRORS.refused;

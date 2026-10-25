@@ -10,6 +10,32 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- The music player of Gladys 5.3: the **Music** box of the dashboard shows
+  the cover, the title, the artist, the album and a progress bar you can drag
+  to seek, with shuffle and repeat. New features on the player: title,
+  artist, album, artwork, duration, position (writable: seek), shuffle and
+  repeat (off, all, one).
+- The panels of the Music box: the OwnTone **queue** (tap an item to play
+  it), **search** in the library (tracks, artists, albums, playlists) and
+  **browsing** of the playlists, artists, albums and folders; an item plays in
+  place of the queue, after the current track, or at the end of the queue.
+  The core scene action "Play music on a speaker" uses the same catalog;
+  chosen on an output, it plays on that output only.
+- Covers read from OwnTone, scaled by OwnTone to the size Gladys shows.
+
+### Changed
+
+- Requires Gladys 5.3 or later (the music player); 1.0.x stays for 5.1 and
+  5.2.
+- **Playback state** is writable (0 pause, 1 play, 2 stop) and reads **2**
+  (idle) instead of 0 when OwnTone is stopped or offline: a scene on "= 0"
+  no longer fires on a stop.
+- A player added with 1.0 keeps working; open the Discover tab and click
+  **Update** on it to get the new features (they are added, the existing ones
+  keep their scenes and dashboards). The "Now playing" text stays.
+
 ## [1.0.1] - 2026-10-22
 
 ### Security

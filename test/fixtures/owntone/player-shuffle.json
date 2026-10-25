@@ -1,0 +1,11 @@
+{
+  "state": "play",
+  "repeat": "all",
+  "consume": false,
+  "shuffle": true,
+  "volume": 50,
+  "item_id": 13,
+  "item_length_ms": 32507,
+  "item_progress_ms": 340,
+  "artwork_url": "./artwork/nowplaying"
+}

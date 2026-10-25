@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { LANGUAGES } from '../src/config.js';
 import { OUTPUT_FEATURES, PLAYER_FEATURES } from '../src/devices.js';
 import {
+  CATALOG_TEXT,
   COMMAND_ERRORS,
   DONE_TEXT,
   INIT_FAILED,
@@ -174,6 +175,9 @@ test('every message table of the code has the four languages', () => {
     ),
     ...Object.entries(STATUS_TEXT).flatMap(([key, value]) =>
       problems(value, `STATUS_TEXT.${key}`, MAX.message),
+    ),
+    ...Object.entries(CATALOG_TEXT).flatMap(([key, value]) =>
+      problems(value, `CATALOG_TEXT.${key}`, MAX.short),
     ),
     ...Object.entries(DONE_TEXT).flatMap(([key, value]) =>
       problems(value, `DONE_TEXT.${key}`, MAX.message),

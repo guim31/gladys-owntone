@@ -36,7 +36,8 @@ src/app.js                        registers every SDK handler on the hub (shared
 src/hub.js                        the server, its model, devices, states, scene events, commands
 src/owntone/client.js             JSON API (HTTP 3689) + notification WebSocket, reconnection
 src/owntone/model.js              /api/player, /api/outputs, /api/queue?id= -> model
-src/devices.js                    player and output devices, feature couples, states
+src/devices.js                    player and output devices, feature couples, states, nowPlaying()
+src/catalog.js                    Gladys 5.3 music panel: browse, search, play, queue, artwork (manifest `music`)
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget handlers (manifest `widgets`)
 src/texts.js                      every text of the container, in en/fr/de/es
@@ -249,7 +250,8 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Mot de passe : hors `trusted_networks`, HTTP Basic avec l'utilisateur **`admin`** obligatoire (un
   autre nom ou un nom vide : 401). Le WebSocket ne demande rien.
 - WebSocket sur `config.websocket_port` (3688), sous-protocole **`notify`**, abonnement
-  `{"notify":["player","outputs","volume","queue"]}` ; il ne donne que les noms des changements :
+  `{"notify":["player","outputs","volume","queue","options"]}` (`options` : aléatoire et répétition,
+  le seul événement qu'OwnTone émet quand elles changent, vérifié sur le banc) ; il ne donne que les noms des changements :
   tout se relit par l'API. Pas de WebSocket sur `/ws` du port 3689 en 29.3.
 - **OwnTone dit `pause` environ 2 s pendant le démarrage des sorties**, à chaque lancement et à chaque
   `next`/`previous` : d'où le délai de 5 s (`stopGraceMs`) avant le déclencheur « lecture arrêtée ».
@@ -266,3 +268,28 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   `rm -rf /run/dbus /run/avahi-daemon` (sinon un `docker restart` échoue). Utilisateur `nobody`
   (`uid` d'owntone.conf), sortie `fifo` lue par un `cat` en boucle, ALSA `card = "null"` = une sortie
   qui refuse de démarrer (400). Pas d'AirPlay ni de Chromecast sur le banc.
+- **Lecteur Musique 5.3 (1.1.0)** : les nouvelles fonctionnalités sont sur l'appareil **lecteur**
+  (le serveur), pas sur les sorties ; clés = types (`${device}:${type}`, défaut de
+  `publishNowPlaying`, pas de `featureExternalIds`). Tout ce qui est `music` (volume compris) passe par
+  `publishNowPlaying` ; `publishChangedStates` ne garde que le texte « En cours » et les sorties. Pas de
+  muet dans l'API d'OwnTone : aucun publié. Hors ligne : IDLE et textes vidés.
+- **API vérifiée sur 29.3 (banc `scratch-owntone`)** : `player` donne `shuffle`, `repeat`
+  (`off|all|single`), `item_progress_ms`, `item_length_ms` ; après `stop`, `item_id` repart sur le
+  premier élément de la file. `player/pause` et `player/seek` à l'arrêt répondent **500** (pas de pause
+  envoyée à l'arrêt, mais envoyée pendant la « pause » de démarrage des sorties). La pause de ~2 s au
+  démarrage est publiée telle quelle (0), comme en 1.0 ; BUFFERING serait plus juste mais indiscernable
+  d'une vraie pause sans heuristique. `player/play?position=N` saute dans la file (400 au-delà de la fin). Avec la lecture
+  aléatoire, `GET queue` rend la file **dans l'ordre mélangé** (positions renumérotées) et
+  `queue/items/add?position=` insère dans cet ordre : « après le morceau en cours » = position du
+  morceau + 1 dans les deux cas. La bibliothèque pagine (`offset`, `limit`, `total`) sauf
+  `library/files` (dossiers, playlists et pistes d'un niveau, coupés ici). `library/playlists/0/playlists`
+  = la racine des playlists ; un dossier de playlists a `folder: true`.
+- **Pochettes** : `/artwork/item/<track_id>` (et `/artwork/group/<id>` pour albums et artistes), hors
+  `/api` mais **avec le mot de passe** (401 sinon), d'où un `onMusicGetArtwork` maison ; OwnTone met
+  l'image à `maxwidth`/`maxheight` (2,5 Mo → 49 Ko en JPEG) mais **garde un PNG en PNG** (3,6 Mo de bruit
+  → 190 Ko à 400 px) : au-delà de 300 Ko, redemandé à 300 puis 200 px. **204** sans pochette (flux).
+  Un flux a `?v=<version>` dans son `artwork_url` (la clé change avec ses métadonnées).
+- L'action de scène `music.play-media` du cœur liste **tout appareil ayant une fonctionnalité `music`**,
+  donc les sorties (`music/volume`) : jouer sur une sortie (mode replace) la sélectionne seule
+  (`outputs/set`) avant d'ajouter à la file. Banc : `scratch-owntone/` (Dockerfile sur `owntone/owntone`,
+  mot de passe, bibliothèque générée par GStreamer et Pillow, `check/check-music.mjs`).

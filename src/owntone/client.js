@@ -26,8 +26,9 @@ export const DEFAULT_CLIENT_TIMINGS = {
 };
 
 // What the hub follows: the play state, the outputs and their volumes, the
-// queue (what plays).
-export const NOTIFY_EVENTS = ['player', 'outputs', 'volume', 'queue'];
+// queue (what plays), and the options (shuffle, repeat: OwnTone 29.3 names
+// only `options` when they change).
+export const NOTIFY_EVENTS = ['player', 'outputs', 'volume', 'queue', 'options'];
 
 /** An error with a stable code: unreachable | auth | forbidden | http | protocol. */
 export class OwnToneError extends Error {
@@ -73,6 +74,81 @@ export class OwnToneClient extends EventEmitter {
 
   get baseUrl() {
     return `http://${this.address}/api`;
+  }
+
+  /**
+   * Where the server is, artwork included (`/artwork/...` is outside /api),
+   * normalized like URL.origin (no `:80`).
+   */
+  get origin() {
+    return new URL(`http://${this.address}/`).origin;
+  }
+
+  /**
+   * The absolute URL of an artwork path given by OwnTone (`./artwork/item/3`,
+   * `./artwork/group/5`, `?v=2` for a stream), asking for at most `size` px:
+   * OwnTone scales the image itself. Null for an empty path.
+   */
+  artworkUrl(path, size) {
+    if (typeof path !== 'string' || path.trim() === '') {
+      return null;
+    }
+    const url = new URL(path.trim(), `${this.origin}/`);
+    if (url.origin === this.origin) {
+      url.searchParams.set('maxwidth', String(size));
+      url.searchParams.set('maxheight', String(size));
+    }
+    return url.href;
+  }
+
+  /**
+   * The bytes of an image, the password sent only to this server. Null when
+   * OwnTone has none (204, 404); an OwnToneError `too_large` above maxBytes.
+   * @param {string} url
+   * @param {number} maxBytes
+   * @returns {Promise<Buffer|null>}
+   */
+  async fetchImage(url, maxBytes) {
+    const headers = {};
+    if (this.password && new URL(url).origin === this.origin) {
+      headers.Authorization = `Basic ${Buffer.from(`admin:${this.password}`).toString('base64')}`;
+    }
+    let response;
+    try {
+      response = await this.fetchFn(url, {
+        headers,
+        signal: AbortSignal.timeout(this.timings.callTimeout),
+      });
+    } catch (err) {
+      const reason = err?.name === 'TimeoutError' ? 'timeout' : (err?.cause?.code ?? err?.message);
+      throw new OwnToneError('unreachable', `no answer (${reason})`);
+    }
+    const cancel = () => response.body?.cancel().catch(() => {});
+    if (response.status === 204 || response.status === 404) {
+      await cancel();
+      return null;
+    }
+    if (!response.ok) {
+      await cancel();
+      throw new OwnToneError('http', `artwork: HTTP ${response.status}`, {
+        status: response.status,
+      });
+    }
+    const tooLarge = () => new OwnToneError('too_large', `artwork above ${maxBytes} bytes`);
+    if (Number(response.headers.get('content-length')) > maxBytes) {
+      await cancel();
+      throw tooLarge();
+    }
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of response.body ?? []) {
+      size += chunk.length;
+      if (size > maxBytes) {
+        throw tooLarge();
+      }
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks, size);
   }
 
   start() {

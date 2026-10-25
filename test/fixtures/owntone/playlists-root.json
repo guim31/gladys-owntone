@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "id": 7,
+      "name": "Morning",
+      "path": "/srv/music/Playlists/Morning.m3u",
+      "parent_id": "0",
+      "type": "plain",
+      "smart_playlist": false,
+      "random": false,
+      "folder": false,
+      "item_count": 2,
+      "stream_count": 0,
+      "uri": "library:playlist:7"
+    },
+    {
+      "id": 8,
+      "name": "Radio",
+      "path": "/srv/music/Playlists/Radio.m3u",
+      "parent_id": "0",
+      "type": "plain",
+      "smart_playlist": false,
+      "random": false,
+      "folder": false,
+      "item_count": 1,
+      "stream_count": 1,
+      "uri": "library:playlist:8"
+    }
+  ],
+  "total": 2,
+  "offset": 0,
+  "limit": -1
+}

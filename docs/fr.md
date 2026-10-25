@@ -8,11 +8,12 @@ suit chaque changement en direct par son WebSocket. Pas de cloud, pas de compte.
 
 > **Testée contre un vrai OwnTone 29.3 en Docker, sans enceinte AirPlay ni Chromecast : vos retours
 > sont les bienvenus.** Lecture, volumes, sélection des sorties, notifications et redémarrage
-> d'OwnTone ont été vérifiés en vrai, sur ses sorties locale et fifo.
+> d'OwnTone ont été vérifiés en vrai, sur ses sorties locale et fifo, comme le lecteur Musique de
+> Gladys 5.3 (pochettes, file d'attente, recherche, navigation, aléatoire, répétition, avance).
 
 ## Prérequis
 
-- Gladys Assistant 5.1 ou plus récent.
+- Gladys Assistant 5.3 ou plus récent (la version 1.0 de l'intégration reste pour Gladys 5.1 et 5.2).
 - Un serveur OwnTone (version 28 ou plus récente) joignable depuis Gladys sur le port de son
   interface web, 3689 par défaut, et sur son port WebSocket (`websocket_port` dans `owntone.conf`,
   3688 par défaut).
@@ -39,7 +40,10 @@ Ouvrez ensuite l'onglet **Découverte** et ajoutez le lecteur et les sorties vou
 Le lecteur d'OwnTone, un par serveur :
 
 - **Volume** (0 à 100) : le volume général. OwnTone y ajuste chaque sortie sélectionnée.
-- **État de lecture** : en lecture ou non.
+- **État de lecture** : en pause (0), en lecture (1) ou arrêté (2) ; il se pilote aussi.
+- **Titre**, **Artiste**, **Album**, **Pochette**, **Durée** et **Position** du morceau en cours ;
+  la position se règle (avancer ou reculer dans le morceau).
+- **Lecture aléatoire** et **Répétition** (désactivée, tout, un seul morceau), pilotables.
 - **Lecture**, **Pause**, **Précédent**, **Suivant** : des boutons.
 - **En cours** : titre et artiste, avec l'état quand la lecture est en pause ou arrêtée.
 
@@ -57,6 +61,35 @@ PulseAudio), fifo.
 
 Une sortie qui quitte OwnTone (enceinte éteinte, hors du réseau) apparaît non sélectionnée et garde
 son appareil dans Gladys ; elle revient d'elle-même.
+
+## Lecteur Musique de Gladys 5.3
+
+Depuis Gladys 5.3, la boîte **Musique** du tableau de bord est un vrai lecteur, et OwnTone la remplit
+entièrement :
+
+- la pochette, le titre, l'artiste et l'album, une barre de progression qu'on fait glisser pour
+  avancer, lecture et pause, précédent, suivant, lecture aléatoire, répétition et le volume général ;
+- la **file d'attente** (bouton liste) : la file d'OwnTone dans l'ordre où elle joue (mélangée quand
+  la lecture aléatoire est active), le morceau en cours en évidence ; un appui en lance un autre ;
+- **la recherche et la navigation** (bouton loupe) : la recherche porte sur les morceaux, artistes,
+  albums et playlists de la bibliothèque ; la navigation propose **Playlists**, **Artistes**,
+  **Albums** et **Fichiers** (les dossiers de la bibliothèque). Un appui lance l'élément à la place de
+  la file ; le geste secondaire l'ajoute après le morceau en cours ou en fin de file. Un dossier
+  s'ouvre, il ne se lit pas.
+
+L'action de scène **Lancer une musique sur une enceinte** de Gladys choisit une playlist, un album, un
+artiste ou un morceau dans le même panneau. Choisie sur le lecteur, elle joue sur les sorties déjà
+sélectionnées ; choisie sur une **sortie**, elle fait de cette sortie la seule sélectionnée, puis
+lance la musique.
+
+**Un lecteur ajouté avec la version 1.0** fonctionne comme avant, sans les nouvelles
+fonctionnalités : ouvrez l'onglet **Découverte** de l'intégration et cliquez sur **Mettre à jour**
+sur le lecteur (Gladys le propose parce que les fonctionnalités ont changé). Les nouvelles
+fonctionnalités s'ajoutent ; les anciennes gardent leurs scènes et leurs tableaux de bord. Un
+changement : **État de lecture** vaut 2 au lieu de 0 quand OwnTone est arrêté ou hors ligne.
+
+Les pochettes viennent d'OwnTone, qui les met lui-même à la taille demandée (400 pixels pour le
+lecteur, 128 pour les listes) : même une pochette de plusieurs mégaoctets sur le disque s'affiche.
 
 ## Widget du tableau de bord
 
@@ -118,7 +151,10 @@ plus (de 5 en 5).
   lui).
 - Pas d'appairage des enceintes AirPlay qui demandent un code, ni de mot de passe de sortie : faites-le
   une fois dans l'interface web d'OwnTone.
-- Une playlist se choisit par son nom ou son URI : pas de navigation dans la bibliothèque, les albums
-  ou les artistes.
+- L'action **Lancer une playlist** de l'intégration choisit une playlist par son nom ou son URI ;
+  pour parcourir la bibliothèque, utilisez l'action **Lancer une musique sur une enceinte** de
+  Gladys 5.3.
+- Pas de muet : l'API d'OwnTone n'en a pas (baissez le volume).
+- Lancer un artiste ajoute tous ses morceaux à la file.
 - Développée sans enceinte AirPlay ni Chromecast : leur comportement vient de l'API d'OwnTone, pas
   d'un essai avec le matériel. Vos retours sont les bienvenus.
