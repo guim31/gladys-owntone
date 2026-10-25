@@ -759,8 +759,9 @@ export class Hub {
     if (!command) {
       throw new CommandError('bad_command', this.language);
     }
-    // OwnTone answers 500 to a pause while stopped: nothing to do.
-    if (command === 'pause' && this.model.player.state !== 'play') {
+    // OwnTone answers 500 to a pause while stopped: nothing to do. (While it
+    // says "pause" for the 2 s its outputs start, the pause is sent.)
+    if (command === 'pause' && this.model.player.state === 'stop') {
       return;
     }
     await this.command(command);

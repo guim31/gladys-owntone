@@ -25,7 +25,7 @@ local network, through its JSON API (port 3689) and its WebSocket notifications.
   plays on that output only. Artwork is served behind a key, read with the admin password and scaled
   by OwnTone itself (400 px for the player, 128 px for the lists; asked again smaller when a PNG is
   still above the 300 KB Gladys accepts). Players added with 1.0 get the new features through
-  **Update** in the Discover tab; playback state then reads 2 (idle) instead of 0 when stopped.
+  **Update** in the Discover tab; playback state reads 2 (idle) instead of 0 when stopped.
 - **One device per output**, keyed on the OwnTone output id: selected (on/off) and its volume.
 - **Live**: OwnTone's WebSocket tells what changed and the integration reads it at once; a full read
   every minute (every 5 seconds when the WebSocket cannot be reached).

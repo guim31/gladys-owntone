@@ -63,6 +63,8 @@ const PNG = (size) =>
   Buffer.concat([Buffer.from('\x89PNG\r\n\x1a\n', 'latin1'), Buffer.alloc(size)]);
 /** Track id whose artwork is a 400 KB PNG at 400 px, 100 KB below. */
 export const HEAVY_ARTWORK_TRACK = 5;
+/** Track id whose artwork is too large at every size. */
+export const HUGE_ARTWORK_TRACK = 4;
 
 /** A library track (or the stream) as a queue item. */
 const queueItem = (track, id) => ({
@@ -187,6 +189,12 @@ export class FakeOwntone {
     this.notify('player');
   }
 
+  /** Shuffle or repeat changed (by the web interface, a remote…). */
+  setOptions(changes) {
+    Object.assign(this.player, changes);
+    this.notify('options');
+  }
+
   setOutput(id, changes) {
     Object.assign(this.output(id), changes);
     this.notify('outputs', 'volume');
@@ -253,6 +261,13 @@ export class FakeOwntone {
     if (trackId === HEAVY_ARTWORK_TRACK) {
       const image = PNG(size >= 400 ? 400_000 : 100_000);
       return res.writeHead(200, { 'Content-Type': 'image/png' }).end(image);
+    }
+    if (trackId === HUGE_ARTWORK_TRACK) {
+      // Too large at every size, announced by Content-Length.
+      const image = PNG(400_000);
+      return res
+        .writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': image.length })
+        .end(image);
     }
     return res.writeHead(200, { 'Content-Type': 'image/jpeg' }).end(JPEG);
   }
@@ -359,10 +374,12 @@ export class FakeOwntone {
       } else if (command === 'seek') {
         if (this.player.state === 'stop') return 500;
         this.player.item_progress_ms = Number(query.get('position_ms'));
-      } else if (command === 'shuffle') {
-        this.player.shuffle = query.get('state') === 'true';
-      } else if (command === 'repeat') {
-        this.player.repeat = query.get('state');
+      } else if (command === 'shuffle' || command === 'repeat') {
+        // As OwnTone 29.3: these only name `options`.
+        this.setOptions({
+          [command]: command === 'shuffle' ? query.get('state') === 'true' : query.get('state'),
+        });
+        return undefined;
       } else if (command === 'pause') {
         if (this.player.state === 'stop') return 500;
         this.player.state = 'pause';

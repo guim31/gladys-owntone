@@ -9,10 +9,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateMediaItems } from '@gladysassistant/integration-sdk';
 import { ROOTS } from '../src/catalog.js';
+import { OwnToneClient } from '../src/owntone/client.js';
 import {
   FIFO,
   FakeOwntone,
   HEAVY_ARTWORK_TRACK,
+  HUGE_ARTWORK_TRACK,
   JPEG,
   RADIO_TRACK,
   SMALL,
@@ -123,10 +125,8 @@ test('playback state, position, shuffle and repeat are commands', async (t) => {
   t.after(() => world.stop());
   const { gladys, server } = world;
   // A pause while stopped: OwnTone would answer 500, nothing is sent.
-  const sent = server.requests.length;
   assert.equal((await setValue(world, 'playback_state', 0)).success, true);
   assert.equal(server.requests.filter((r) => r.path === '/api/player/pause').length, 0);
-  assert.ok(server.requests.length >= sent);
 
   await gladys.fake.musicPlay(player, { id: SMALL.uri, type: 'album' });
   await until(() => state(gladys, PLAYER_ID, 'playback_state') === 1, 2000, 'playing');
@@ -154,6 +154,14 @@ test('playback state, position, shuffle and repeat are commands', async (t) => {
   // Seek while stopped: OwnTone refuses.
   await until(() => state(gladys, PLAYER_ID, 'playback_state') === 2, 2000, 'stopped');
   assert.match((await setValue(world, 'position', 5)).error, /refused/);
+});
+
+test('shuffle and repeat changed outside Gladys arrive at once (the options event)', async (t) => {
+  const world = await ready();
+  t.after(() => world.stop());
+  world.server.setOptions({ shuffle: true, repeat: 'all' });
+  await until(() => state(world.gladys, PLAYER_ID, 'shuffle') === 1, 300, 'shuffle');
+  await until(() => state(world.gladys, PLAYER_ID, 'repeat') === 1, 300, 'repeat all');
 });
 
 test('browse: our folders, then the library of OwnTone, by pages', async (t) => {
@@ -358,9 +366,46 @@ test('artwork: read with the password, asked smaller when too heavy, none for a 
     '?maxwidth=300&maxheight=300',
   );
 
+  const huge = await fake.musicGetArtwork(
+    world.gladys.artworkKey(artworkUrl(world, HUGE_ARTWORK_TRACK)),
+  );
+  assert.match(huge.error, /larger than 300 KB/);
+
   const none = await fake.musicGetArtwork(
     world.gladys.artworkKey(artworkUrl(world, RADIO_TRACK.id)),
   );
   assert.match(none.error, /no cover/);
   assert.equal((await fake.musicGetArtwork('art-000000000000')).success, false);
+});
+
+test('the password goes to the OwnTone server only, port 80 included', async () => {
+  const seen = [];
+  const fetch = async (url, { headers }) => {
+    seen.push([url, headers.Authorization ?? null]);
+    return new Response(JPEG, { status: 200 });
+  };
+  const client = new OwnToneClient({ host: 'owntone.lan', port: 80, password: 'secret', fetch });
+  const own = client.artworkUrl('./artwork/item/3', 400);
+  assert.equal(own, 'http://owntone.lan/artwork/item/3?maxwidth=400&maxheight=400');
+  await client.fetchImage(own, 1000);
+  await client.fetchImage('http://elsewhere.example/logo.png', 1000);
+  assert.equal(
+    client.artworkUrl('http://elsewhere.example/logo.png', 400),
+    'http://elsewhere.example/logo.png',
+  );
+  assert.equal(seen[0][1], `Basic ${Buffer.from('admin:secret').toString('base64')}`);
+  assert.equal(seen[1][1], null);
+  assert.equal(client.artworkUrl('', 400), null);
+});
+
+test('a queue row OwnTone gives without URI keeps its place', async (t) => {
+  const world = await ready();
+  t.after(() => world.stop());
+  await world.gladys.fake.musicPlay(player, { id: SMALL.uri, type: 'album' });
+  world.server.queue[1].uri = '';
+  const page = valid(await world.gladys.fake.musicQueueGet(player));
+  assert.deepEqual(
+    page.map((i) => i.id),
+    ['library:track:3', `queue:${world.server.queue[1].id}`, 'library:track:5'],
+  );
 });

@@ -26,8 +26,9 @@ export const DEFAULT_CLIENT_TIMINGS = {
 };
 
 // What the hub follows: the play state, the outputs and their volumes, the
-// queue (what plays).
-export const NOTIFY_EVENTS = ['player', 'outputs', 'volume', 'queue'];
+// queue (what plays), and the options (shuffle, repeat: OwnTone 29.3 names
+// only `options` when they change).
+export const NOTIFY_EVENTS = ['player', 'outputs', 'volume', 'queue', 'options'];
 
 /** An error with a stable code: unreachable | auth | forbidden | http | protocol. */
 export class OwnToneError extends Error {
@@ -75,9 +76,12 @@ export class OwnToneClient extends EventEmitter {
     return `http://${this.address}/api`;
   }
 
-  /** Where the server is, artwork included (`/artwork/...` is outside /api). */
+  /**
+   * Where the server is, artwork included (`/artwork/...` is outside /api),
+   * normalized like URL.origin (no `:80`).
+   */
   get origin() {
-    return `http://${this.address}`;
+    return new URL(`http://${this.address}/`).origin;
   }
 
   /**

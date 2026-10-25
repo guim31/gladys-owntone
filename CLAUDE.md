@@ -250,7 +250,8 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Mot de passe : hors `trusted_networks`, HTTP Basic avec l'utilisateur **`admin`** obligatoire (un
   autre nom ou un nom vide : 401). Le WebSocket ne demande rien.
 - WebSocket sur `config.websocket_port` (3688), sous-protocole **`notify`**, abonnement
-  `{"notify":["player","outputs","volume","queue"]}` ; il ne donne que les noms des changements :
+  `{"notify":["player","outputs","volume","queue","options"]}` (`options` : aléatoire et répétition,
+  le seul événement qu'OwnTone émet quand elles changent, vérifié sur le banc) ; il ne donne que les noms des changements :
   tout se relit par l'API. Pas de WebSocket sur `/ws` du port 3689 en 29.3.
 - **OwnTone dit `pause` environ 2 s pendant le démarrage des sorties**, à chaque lancement et à chaque
   `next`/`previous` : d'où le délai de 5 s (`stopGraceMs`) avant le déclencheur « lecture arrêtée ».
@@ -275,7 +276,9 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - **API vérifiée sur 29.3 (banc `scratch-owntone`)** : `player` donne `shuffle`, `repeat`
   (`off|all|single`), `item_progress_ms`, `item_length_ms` ; après `stop`, `item_id` repart sur le
   premier élément de la file. `player/pause` et `player/seek` à l'arrêt répondent **500** (pas de pause
-  envoyée à l'arrêt). `player/play?position=N` saute dans la file (400 au-delà de la fin). Avec la lecture
+  envoyée à l'arrêt, mais envoyée pendant la « pause » de démarrage des sorties). La pause de ~2 s au
+  démarrage est publiée telle quelle (0), comme en 1.0 ; BUFFERING serait plus juste mais indiscernable
+  d'une vraie pause sans heuristique. `player/play?position=N` saute dans la file (400 au-delà de la fin). Avec la lecture
   aléatoire, `GET queue` rend la file **dans l'ordre mélangé** (positions renumérotées) et
   `queue/items/add?position=` insère dans cet ordre : « après le morceau en cours » = position du
   morceau + 1 dans les deux cas. La bibliothèque pagine (`offset`, `limit`, `total`) sauf
